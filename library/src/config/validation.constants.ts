@@ -1,0 +1,6 @@
+export const QUERY_VALIDATION = {
+  MIN_LENGTH: 3,
+  MAX_LENGTH: 200,
+  OPTIMAL_MIN_LENGTH: 10,
+  OPTIMAL_MAX_LENGTH: 100,
+} as const;

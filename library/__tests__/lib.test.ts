@@ -1,9 +1,16 @@
-import { exampleFunction } from '../src/lib';
+import { QuickrouteAddressParserService } from "../src/services/quickroute-address-parser.service";
+import { validateAddressInput } from "../src/utils/validation.utils";
 
-describe('exampleFunction', () => {
-  it('should process input correctly', () => {
-    const input = 'test';
-    const result = exampleFunction(input);
-    expect(result).toBe('Processed: test');
+describe("QuickrouteAddressParserService", () => {
+  it("should be defined", () => {
+    expect(QuickrouteAddressParserService).toBeDefined();
+  });
+});
+
+describe("validateAddressInput", () => {
+  it("should validate input correctly", () => {
+    const input = { query: "Sydney NSW", limit: 10 };
+    const result = validateAddressInput(input);
+    expect(result.isValid).toBe(true);
   });
 });

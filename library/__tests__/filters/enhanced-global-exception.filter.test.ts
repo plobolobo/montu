@@ -59,6 +59,10 @@ describe("EnhancedGlobalExceptionFilter", () => {
     // Reset mocks
     vi.clearAllMocks();
 
+    // Re-establish UUID mock after clearing
+    const { v4 } = await import("uuid");
+    vi.mocked(v4).mockReturnValue("mock-uuid-1234");
+
     // Create mock objects using factories
     mockRequest = createMockRequest({
       correlationId: "existing-correlation-123",
@@ -174,12 +178,15 @@ describe("EnhancedGlobalExceptionFilter", () => {
     it("should generate correlation ID when none exists", () => {
       const exception = new Error("Test error");
       setupMockForLogging(mockErrorResponseBuilder);
-      
+
       // Create a request without correlation ID
       const requestWithoutId = createMockRequest({ headers: {} });
       delete (requestWithoutId as any).correlationId;
-      
-      const hostWithoutId = createMockArgumentsHost(requestWithoutId, mockResponse);
+
+      const hostWithoutId = createMockArgumentsHost(
+        requestWithoutId,
+        mockResponse
+      );
 
       filter.catch(exception, hostWithoutId);
 
@@ -220,10 +227,13 @@ describe("EnhancedGlobalExceptionFilter", () => {
     it("should handle missing request properties", () => {
       const exception = new Error("Test error");
       setupMockForLogging(mockErrorResponseBuilder);
-      
+
       // Create a minimal request with missing properties
       const minimalRequest = { headers: {} };
-      const minimalHost = createMockArgumentsHost(minimalRequest as any, mockResponse);
+      const minimalHost = createMockArgumentsHost(
+        minimalRequest as any,
+        mockResponse
+      );
 
       filter.catch(exception, minimalHost);
 
@@ -643,7 +653,7 @@ describe("EnhancedGlobalExceptionFilter", () => {
     it("should handle minimal request with generated correlation ID", () => {
       const exception = new Error("Minimal error");
       setupMockForLogging(mockErrorResponseBuilder);
-      
+
       // Create a minimal request
       const minimalRequest = {} as any;
       const minimalHost = createMockArgumentsHost(minimalRequest, mockResponse);

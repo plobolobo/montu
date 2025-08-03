@@ -30,7 +30,6 @@ import {
   validationPatterns,
 } from "../utils";
 
-// Mock the dependencies
 vi.mock("../../src/mappers", () => ({
   createErrorFromException: vi.fn(),
 }));
@@ -56,14 +55,11 @@ describe("EnhancedGlobalExceptionFilter", () => {
   let mockErrorResponseBuilder: any;
 
   beforeEach(async () => {
-    // Reset mocks
     vi.clearAllMocks();
 
-    // Re-establish UUID mock after clearing
     const { v4 } = await import("uuid");
     vi.mocked(v4).mockReturnValue("mock-uuid-1234");
 
-    // Create mock objects using factories
     mockRequest = createMockRequest({
       correlationId: "existing-correlation-123",
     });
@@ -72,13 +68,11 @@ describe("EnhancedGlobalExceptionFilter", () => {
     mockErrorMapping = createMockErrorMapping();
     mockErrorResponseBuilder = createMockErrorResponseBuilder();
 
-    // Setup mock implementations
     (createErrorFromException as any).mockReturnValue(mockErrorMapping);
     (ErrorResponseBuilder.create as any).mockReturnValue(
       mockErrorResponseBuilder
     );
 
-    // Mock services using factories
     const mockErrorLoggingService = {
       logError: vi.fn(),
       logWarning: vi.fn(),
@@ -100,7 +94,6 @@ describe("EnhancedGlobalExceptionFilter", () => {
     httpAdapterHost = module.get<HttpAdapterHost>(HttpAdapterHost);
     errorLoggingService = module.get<ErrorLoggingService>(ErrorLoggingService);
 
-    // Mock logger to avoid console output using utility
     vi.spyOn(filter["logger"], "error").mockImplementation(() => {});
     vi.spyOn(filter["logger"], "warn").mockImplementation(() => {});
     vi.spyOn(filter["logger"], "debug").mockImplementation(() => {});
@@ -179,7 +172,6 @@ describe("EnhancedGlobalExceptionFilter", () => {
       const exception = new Error("Test error");
       setupMockForLogging(mockErrorResponseBuilder);
 
-      // Create a request without correlation ID
       const requestWithoutId = createMockRequest({ headers: {} });
       delete (requestWithoutId as any).correlationId;
 
@@ -228,7 +220,6 @@ describe("EnhancedGlobalExceptionFilter", () => {
       const exception = new Error("Test error");
       setupMockForLogging(mockErrorResponseBuilder);
 
-      // Create a minimal request with missing properties
       const minimalRequest = { headers: {} };
       const minimalHost = createMockArgumentsHost(
         minimalRequest as any,
@@ -617,15 +608,12 @@ describe("EnhancedGlobalExceptionFilter", () => {
 
       filter.catch(exception, mockHost);
 
-      // Verify correlation ID handling
       expect((mockRequest as any).correlationId).toBe(
         "existing-correlation-123"
       );
 
-      // Verify error mapping
       expect(createErrorFromException).toHaveBeenCalledWith(exception);
 
-      // Verify error response building
       expect(ErrorResponseBuilder.create).toHaveBeenCalledWith(
         mockErrorMapping,
         expect.objectContaining({
@@ -633,7 +621,6 @@ describe("EnhancedGlobalExceptionFilter", () => {
         })
       );
 
-      // Verify logging
       expect(errorLoggingService.logError).toHaveBeenCalledWith(
         exception,
         expect.any(Object),
@@ -642,7 +629,6 @@ describe("EnhancedGlobalExceptionFilter", () => {
         })
       );
 
-      // Verify response
       expect(httpAdapterHost.httpAdapter.reply).toHaveBeenCalledWith(
         mockResponse,
         mockErrorResponseBuilder.build(),
@@ -654,7 +640,6 @@ describe("EnhancedGlobalExceptionFilter", () => {
       const exception = new Error("Minimal error");
       setupMockForLogging(mockErrorResponseBuilder);
 
-      // Create a minimal request
       const minimalRequest = {} as any;
       const minimalHost = createMockArgumentsHost(minimalRequest, mockResponse);
 

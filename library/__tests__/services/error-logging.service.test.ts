@@ -49,7 +49,6 @@ describe("ErrorLoggingService", () => {
     service = module.get<ErrorLoggingService>(ErrorLoggingService);
     loggingConfig = module.get<LoggingConfig>(LOGGING_CONFIG_TOKEN);
 
-    // Mock the logger
     logger = service["logger"] as Logger;
     vi.spyOn(logger, "error").mockImplementation(() => {});
     vi.spyOn(logger, "warn").mockImplementation(() => {});
@@ -180,7 +179,6 @@ describe("ErrorLoggingService", () => {
     });
 
     it("should not log errors if shouldLogError returns false", () => {
-      // Mock shouldLogError to return false
       vi.spyOn(service as any, "shouldLogError").mockReturnValue(false);
 
       const error = new Error("Should not be logged");
@@ -311,9 +309,6 @@ describe("ErrorLoggingService", () => {
         expect(metadata.password).toBe("[REDACTED]");
         expect(metadata.token).toBe("[REDACTED]");
         expect(metadata.normalField).toBe("normal");
-
-        // Note: Nested masking depends on implementation
-        // This test validates the main level masking works
       });
 
       it("should handle case-insensitive sensitive field matching", () => {
@@ -328,8 +323,7 @@ describe("ErrorLoggingService", () => {
         service.logError(error, mockErrorContext, dataWithMixedCase);
 
         const [, metadata] = (logger.error as any).mock.calls[0];
-        // This test checks if the implementation handles case sensitivity
-        // Results will depend on actual implementation
+
         expect(metadata).toHaveProperty("normalField", "normal");
       });
     });
@@ -344,7 +338,7 @@ describe("ErrorLoggingService", () => {
         service.logError(httpError, mockErrorContext);
 
         const [, metadata] = (logger.error as any).mock.calls[0];
-        // Check that additional HTTP error properties are extracted
+
         expect(metadata.errorType).toBe("Error");
       });
 
@@ -362,7 +356,7 @@ describe("ErrorLoggingService", () => {
     describe("stack trace handling", () => {
       it("should truncate very long stack traces", () => {
         const error = new Error("Error with long stack");
-        // Create a very long stack trace
+
         const longStackLines = Array(50).fill(
           "    at someFunction (file.js:1:1)"
         );
@@ -374,7 +368,6 @@ describe("ErrorLoggingService", () => {
 
         const [, metadata] = (logger.error as any).mock.calls[0];
         if (metadata.stackTrace) {
-          // Verify stack trace is present and potentially truncated
           expect(metadata.stackTrace).toContain("Error: Error with long stack");
         }
       });
@@ -386,7 +379,7 @@ describe("ErrorLoggingService", () => {
         service.logError(error, mockErrorContext);
 
         const [, metadata] = (logger.error as any).mock.calls[0];
-        // Should not have stackTrace property or it should be undefined
+
         expect(metadata.stackTrace).toBeUndefined();
       });
     });
@@ -464,7 +457,6 @@ describe("ErrorLoggingService", () => {
         })
       );
 
-      // Optional fields should be undefined
       expect(metadata.correlationId).toBeUndefined();
       expect(metadata.method).toBeUndefined();
       expect(metadata.userAgent).toBeUndefined();
@@ -504,10 +496,8 @@ describe("ErrorLoggingService", () => {
 
       const [, metadata] = (customLogger.error as any).mock.calls[0];
 
-      // Stack trace should be disabled
       expect(metadata.stackTrace).toBeUndefined();
 
-      // Custom sensitive field should be masked
       expect(metadata.customSecret).toBe("[REDACTED]");
     });
   });

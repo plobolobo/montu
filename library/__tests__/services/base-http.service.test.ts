@@ -17,7 +17,6 @@ import {
   ProviderUnknownError,
 } from "../../src/exceptions";
 
-// Concrete implementation for testing the abstract BaseHttpService
 class TestHttpService extends BaseHttpService {
   constructor(
     httpService: HttpService,
@@ -27,7 +26,6 @@ class TestHttpService extends BaseHttpService {
     super(httpService, configService, options);
   }
 
-  // Expose protected methods for testing
   public testMakeRequest<T>(
     config: AxiosRequestConfig
   ): Promise<AxiosResponse<T>> {
@@ -103,7 +101,6 @@ describe("BaseHttpService", () => {
 
     service = new TestHttpService(httpService, configService, mockOptions);
 
-    // Mock logger to avoid console output
     vi.spyOn(service["logger"], "debug").mockImplementation(() => {});
     vi.spyOn(service["logger"], "error").mockImplementation(() => {});
     vi.spyOn(service["logger"], "warn").mockImplementation(() => {});
@@ -393,7 +390,6 @@ describe("BaseHttpService", () => {
 
         const result = service.testMapError(networkError, mockContext);
 
-        // Check if it maps to network error, but the actual implementation might map differently
         expect(result).toBeInstanceOf(ProviderUnknownError);
       });
     });
@@ -511,7 +507,7 @@ describe("BaseHttpService", () => {
 
       expect(httpService.request).toHaveBeenCalledWith(
         expect.objectContaining({
-          timeout: 30000, // default timeout
+          timeout: 30000,
         })
       );
     });
@@ -521,13 +517,9 @@ describe("BaseHttpService", () => {
     it("should log warnings on retry attempts", () => {
       const warnSpy = vi.spyOn(service["logger"], "warn");
 
-      // The retry logic is handled by axios-retry, so we test that the service is configured
-      // to log retry attempts. The actual retry logging happens inside the onRetry callback
       expect(service["options"].provider).toBe("TestProvider");
       expect(service["options"].retries).toBe(3);
 
-      // We can't easily test the actual retry callback without mocking axios-retry internals
-      // but we can verify the service is set up correctly for logging
       expect(warnSpy).toBeDefined();
     });
   });
@@ -565,7 +557,7 @@ describe("BaseHttpService", () => {
       const requestConfig = {
         url: "/test",
         method: "GET" as const,
-        headers: { "X-Test": "overridden" }, // This should override the base header
+        headers: { "X-Test": "overridden" },
       };
 
       await service.testMakeRequest(requestConfig);

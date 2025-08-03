@@ -104,7 +104,7 @@ describe("AddressSearchDto", () => {
 
     it("should reject query that is too short", () => {
       const searchData = {
-        query: "a", // Too short
+        query: "a",
         limit: 10,
       };
       const result = AddressSearchSchema.safeParse(searchData);
@@ -114,7 +114,7 @@ describe("AddressSearchDto", () => {
     it("should reject limit that is too high", () => {
       const searchData = {
         query: "123 Main Street",
-        limit: 101, // Too high
+        limit: 101,
       };
       const result = AddressSearchSchema.safeParse(searchData);
       expect(result.success).toBe(false);

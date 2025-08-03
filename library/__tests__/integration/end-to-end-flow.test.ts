@@ -83,7 +83,6 @@ describe("End-to-End Flow Tests", () => {
     httpService = module.get(HttpService);
     configService = module.get(ConfigService);
 
-    // Setup default config values
     configService.get.mockImplementation((key: string) => {
       switch (key) {
         case "TOMTOM_BASE_URL":
@@ -123,7 +122,6 @@ describe("End-to-End Flow Tests", () => {
       expect(result.results[0].address.coordinates.lon).toBe(151.2093);
       expect(result.metadata.warnings).toEqual([]);
 
-      // Verify the HTTP call was made with correct parameters
       expect(httpService.request).toHaveBeenCalledWith(
         expect.objectContaining({
           method: "GET",
@@ -152,8 +150,6 @@ describe("End-to-End Flow Tests", () => {
 
   describe("Verify Resilience: Transient Failures -> Success", () => {
     it("should succeed after transient 429 rate limit error", async () => {
-      // With current mocking, auto-retry doesn't work, so we test manual retry scenario
-      // First request fails, but a subsequent request succeeds
       const rateLimitError = {
         response: {
           status: 429,
@@ -164,15 +160,12 @@ describe("End-to-End Flow Tests", () => {
 
       httpService.request.mockReturnValueOnce(throwError(() => rateLimitError));
 
-      // First call should fail
       await expect(
         service.searchAddresses("123 George Street Sydney", 5)
       ).rejects.toThrow(ProviderRateLimitError);
 
-      // Setup success for second call
       httpService.request.mockReturnValueOnce(of(mockSuccessResponse));
 
-      // Second call should succeed
       const result = await service.searchAddresses(
         "123 George Street Sydney",
         5
@@ -197,15 +190,12 @@ describe("End-to-End Flow Tests", () => {
 
       httpService.request.mockReturnValueOnce(throwError(() => serverError));
 
-      // First call should fail
       await expect(
         service.searchAddresses("123 George Street Sydney", 5)
       ).rejects.toThrow(ProviderServiceError);
 
-      // Setup success for second call
       httpService.request.mockReturnValueOnce(of(mockSuccessResponse));
 
-      // Second call should succeed
       const result = await service.searchAddresses(
         "123 George Street Sydney",
         5
@@ -225,19 +215,16 @@ describe("End-to-End Flow Tests", () => {
         },
       };
 
-      // First call - network error
       httpService.request.mockReturnValueOnce(throwError(() => networkError));
       await expect(
         service.searchAddresses("123 George Street Sydney", 5)
       ).rejects.toThrow(ProviderNetworkError);
 
-      // Second call - server error
       httpService.request.mockReturnValueOnce(throwError(() => serverError));
       await expect(
         service.searchAddresses("123 George Street Sydney", 5)
       ).rejects.toThrow(ProviderServiceError);
 
-      // Third call - success
       httpService.request.mockReturnValueOnce(of(mockSuccessResponse));
       const result = await service.searchAddresses(
         "123 George Street Sydney",
@@ -265,7 +252,6 @@ describe("End-to-End Flow Tests", () => {
         service.searchAddresses("123 George Street Sydney", 5)
       ).rejects.toThrow(ProviderAuthenticationError);
 
-      // Should only be called once (no retry for auth errors)
       expect(httpService.request).toHaveBeenCalledTimes(1);
     });
 
@@ -284,7 +270,6 @@ describe("End-to-End Flow Tests", () => {
         service.searchAddresses("123 George Street Sydney", 5)
       ).rejects.toThrow(ProviderRateLimitError);
 
-      // With mocked HttpService, retry logic happens at axios level, so only 1 call is recorded
       expect(httpService.request).toHaveBeenCalledTimes(1);
     });
 
@@ -303,7 +288,6 @@ describe("End-to-End Flow Tests", () => {
         service.searchAddresses("123 George Street Sydney", 5)
       ).rejects.toThrow(ProviderServiceError);
 
-      // With mocked HttpService, retry logic happens at axios level, so only 1 call is recorded
       expect(httpService.request).toHaveBeenCalledTimes(1);
     });
 
@@ -324,14 +308,11 @@ describe("End-to-End Flow Tests", () => {
         },
       };
 
-      // With current mocking, each call is independent, so test multiple sequential calls
-      // First call - rate limit error
       httpService.request.mockReturnValueOnce(throwError(() => rateLimitError));
       await expect(
         service.searchAddresses("123 George Street Sydney", 5)
       ).rejects.toThrow(ProviderRateLimitError);
 
-      // Second call - server error
       httpService.request.mockReturnValueOnce(throwError(() => serverError));
       await expect(
         service.searchAddresses("123 George Street Sydney", 5)
@@ -359,7 +340,6 @@ describe("End-to-End Flow Tests", () => {
         );
       });
 
-      // Should have made 5 separate API calls
       expect(httpService.request).toHaveBeenCalledTimes(5);
     });
 

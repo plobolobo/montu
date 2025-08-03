@@ -36,7 +36,6 @@ describe("HttpErrorInterceptor", () => {
   };
 
   beforeEach(() => {
-    // Create mock objects using factories
     mockRequest = createMockRequest({
       query: { query: "test query", limit: 10 },
       body: {},
@@ -275,7 +274,7 @@ describe("HttpErrorInterceptor", () => {
         await result.toPromise();
         expect.fail("Should have thrown an error");
       } catch (error: any) {
-        expect(error).toBe(existingException); // Should be the exact same instance
+        expect(error).toBe(existingException);
         expect(error).toBeInstanceOf(ProviderAuthenticationError);
       }
     });
@@ -324,7 +323,6 @@ describe("HttpErrorInterceptor", () => {
         await result.toPromise();
         expect.fail("Should have thrown an error");
       } catch {
-        // Check that logger was called with correct context
         expect(loggerSpy).toHaveBeenCalledWith(
           expect.stringContaining("TestProvider API HTTP error"),
           expect.objectContaining({
@@ -474,7 +472,7 @@ describe("HttpErrorInterceptor", () => {
         expect(customMapper.shouldRethrowException).toHaveBeenCalledWith(
           customError
         );
-        expect(error).toBe(customError); // Should be the exact same instance
+        expect(error).toBe(customError);
       }
     });
   });

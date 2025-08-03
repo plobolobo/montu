@@ -1,6 +1,3 @@
-/**
- * Test setup utilities for common test patterns and configurations
- */
 import { Test, TestingModule } from "@nestjs/testing";
 import { HttpService } from "@nestjs/axios";
 import { ConfigService } from "@nestjs/common";
@@ -11,9 +8,6 @@ import {
   createMockLogger,
 } from "./test-factories";
 
-/**
- * Common mock setup for logging
- */
 export const setupMockForLogging = (
   mockBuilder: any,
   shouldLog = true,
@@ -23,9 +17,6 @@ export const setupMockForLogging = (
   mockBuilder.getLogLevel.mockReturnValue(level);
 };
 
-/**
- * Setup logger mocks to avoid console output during tests
- */
 export const setupLoggerMocks = (service: any) => {
   const logger = service["logger"];
   if (logger) {
@@ -37,9 +28,6 @@ export const setupLoggerMocks = (service: any) => {
   }
 };
 
-/**
- * Create a testing module with common providers
- */
 export const createTestingModuleWithCommonProviders = async (
   providers: any[] = [],
   configOverrides: Record<string, any> = {}
@@ -66,9 +54,6 @@ export const createTestingModuleWithCommonProviders = async (
   };
 };
 
-/**
- * Setup standard beforeEach for tests with HTTP and Config services
- */
 export const createStandardBeforeEach = <T>(
   serviceClass: new (...args: any[]) => T,
   additionalProviders: any[] = [],
@@ -83,7 +68,6 @@ export const createStandardBeforeEach = <T>(
 
     const service = module.get<T>(serviceClass);
 
-    // Setup logger mocks if the service has a logger
     setupLoggerMocks(service);
 
     return {
@@ -97,30 +81,18 @@ export const createStandardBeforeEach = <T>(
   };
 };
 
-/**
- * Standard afterEach cleanup
- */
 export const standardAfterEach = () => {
   vi.clearAllMocks();
   vi.resetAllMocks();
 };
 
-/**
- * Assert that mocks have been called with specific patterns
- */
 export const assertMockCall = {
-  /**
-   * Assert HTTP service was called with expected config
-   */
   httpRequest: (mockHttpService: any, expectedConfig: any, callIndex = 0) => {
     expect(mockHttpService.request).toHaveBeenCalledWith(
       expect.objectContaining(expectedConfig)
     );
   },
 
-  /**
-   * Assert logger was called with expected message pattern
-   */
   logger: (
     mockLogger: any,
     method: string,
@@ -137,9 +109,6 @@ export const assertMockCall = {
     expect(found).toBe(true);
   },
 
-  /**
-   * Assert error response builder was called with expected context
-   */
   errorResponseBuilder: (mockBuilder: any, expectedContext: any) => {
     expect(mockBuilder.build).toHaveBeenCalledWith(
       expect.objectContaining(expectedContext)
@@ -147,13 +116,7 @@ export const assertMockCall = {
   },
 };
 
-/**
- * Common test patterns for error scenarios
- */
 export const errorTestPatterns = {
-  /**
-   * Test that a provider error is properly mapped and thrown
-   */
   testProviderErrorMapping: async (
     serviceMethod: () => Promise<any>,
     expectedErrorType: new (...args: any[]) => Error,
@@ -165,9 +128,6 @@ export const errorTestPatterns = {
     }
   },
 
-  /**
-   * Test that HTTP errors are properly handled
-   */
   testHttpErrorHandling: async (
     mockHttpService: any,
     httpError: any,
@@ -179,33 +139,15 @@ export const errorTestPatterns = {
   },
 };
 
-/**
- * Common validation patterns
- */
 export const validationPatterns = {
-  /**
-   * ISO date string pattern
-   */
   isoDate: /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/,
 
-  /**
-   * UUID pattern
-   */
   uuid: /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
 
-  /**
-   * Australian postcode pattern
-   */
   australianPostcode: /^\d{4}$/,
 };
 
-/**
- * Mock data for different test scenarios
- */
 export const testScenarios = {
-  /**
-   * Successful API response scenario
-   */
   successResponse: {
     status: 200,
     data: {
@@ -251,9 +193,6 @@ export const testScenarios = {
     },
   },
 
-  /**
-   * Rate limit error scenario
-   */
   rateLimitError: {
     response: {
       status: 429,
@@ -262,9 +201,6 @@ export const testScenarios = {
     },
   },
 
-  /**
-   * Service error scenario
-   */
   serviceError: {
     response: {
       status: 503,

@@ -16,7 +16,7 @@ describe("Exception Mappers", () => {
       it("should map CountryMismatchException with correct details", () => {
         const exception = new CountryMismatchException(
           "Australia",
-          "Canada", 
+          "Canada",
           "123 Main St, Sydney"
         );
 
@@ -24,10 +24,11 @@ describe("Exception Mappers", () => {
 
         expect(result).toEqual({
           status: HttpStatus.UNPROCESSABLE_ENTITY,
-          message: 'Address validation failed: Expected Australia address, received Canada for "123 Main St, Sydney"',
+          message:
+            'Address validation failed: Expected Australia address, received Canada for "123 Main St, Sydney"',
           details: {
             expectedCountry: "Australia",
-            actualCountry: "Canada", 
+            actualCountry: "Canada",
             query: "123 Main St, Sydney",
             type: "COUNTRY_VALIDATION_ERROR",
           },
@@ -73,14 +74,18 @@ describe("Exception Mappers", () => {
         const result = createErrorFromException(exception);
 
         expect(result.status).toBe(HttpStatus.NOT_FOUND);
-        expect(result.message).toBe('No address suggestions found for query: "123 Main St" (TomTom)');
+        expect(result.message).toBe(
+          'No address suggestions found for query: "123 Main St" (TomTom)'
+        );
         expect(result.details.type).toBe("NO_RESULTS_FOUND");
       });
     });
 
     describe("ConfigurationException", () => {
       it("should map ConfigurationException correctly", () => {
-        const exception = new ConfigurationException("Missing API key configuration");
+        const exception = new ConfigurationException(
+          "Missing API key configuration"
+        );
 
         const result = createErrorFromException(exception);
 
@@ -97,9 +102,12 @@ describe("Exception Mappers", () => {
     describe("InvalidInputException", () => {
       it("should map InvalidInputException with validation details", () => {
         const exception = new InvalidInputException("Invalid input provided");
-        // Add input and validation errors as they would be in real usage
+
         (exception as any).input = { query: "", limit: -1 };
-        (exception as any).validationErrors = ["Query cannot be empty", "Limit must be positive"];
+        (exception as any).validationErrors = [
+          "Query cannot be empty",
+          "Limit must be positive",
+        ];
 
         const result = createErrorFromException(exception);
 
@@ -109,7 +117,10 @@ describe("Exception Mappers", () => {
           details: {
             type: "INVALID_INPUT_ERROR",
             input: { query: "", limit: -1 },
-            validationErrors: ["Query cannot be empty", "Limit must be positive"],
+            validationErrors: [
+              "Query cannot be empty",
+              "Limit must be positive",
+            ],
           },
         });
       });
@@ -129,7 +140,10 @@ describe("Exception Mappers", () => {
 
     describe("Provider Exceptions (from HTTP interceptor)", () => {
       it("should map ProviderAuthenticationError as HTTP error", () => {
-        const exception = new ProviderAuthenticationError("TomTom", "Invalid API key");
+        const exception = new ProviderAuthenticationError(
+          "TomTom",
+          "Invalid API key"
+        );
 
         const result = createErrorFromException(exception);
 
@@ -139,7 +153,10 @@ describe("Exception Mappers", () => {
       });
 
       it("should map ProviderRateLimitError as HTTP error", () => {
-        const exception = new ProviderRateLimitError("TomTom", "Too many requests");
+        const exception = new ProviderRateLimitError(
+          "TomTom",
+          "Too many requests"
+        );
 
         const result = createErrorFromException(exception);
 
@@ -156,7 +173,10 @@ describe("Exception Mappers", () => {
           details: ["Field is required"],
           timestamp: "2023-01-01T00:00:00Z",
         };
-        const exception = new HttpException(response, HttpStatus.UNPROCESSABLE_ENTITY);
+        const exception = new HttpException(
+          response,
+          HttpStatus.UNPROCESSABLE_ENTITY
+        );
 
         const result = createErrorFromException(exception);
 
@@ -171,7 +191,10 @@ describe("Exception Mappers", () => {
       });
 
       it("should map generic HttpException with string response", () => {
-        const exception = new HttpException("Simple error message", HttpStatus.FORBIDDEN);
+        const exception = new HttpException(
+          "Simple error message",
+          HttpStatus.FORBIDDEN
+        );
 
         const result = createErrorFromException(exception);
 
@@ -246,9 +269,9 @@ describe("Exception Mappers", () => {
       });
 
       it("should map object without Error prototype to unknown error", () => {
-        const exception = { 
+        const exception = {
           someProperty: "value",
-          anotherProperty: 123 
+          anotherProperty: 123,
         };
 
         const result = createErrorFromException(exception);
@@ -281,16 +304,16 @@ describe("Exception Mappers", () => {
             field2: ["Error 3"],
             nested: {
               level2: {
-                value: "deep error"
-              }
-            }
+                value: "deep error",
+              },
+            },
           },
           metadata: {
             timestamp: Date.now(),
-            version: "1.0.0"
-          }
+            version: "1.0.0",
+          },
         };
-        
+
         const exception = new HttpException(response, HttpStatus.BAD_REQUEST);
         const result = createErrorFromException(exception);
 
@@ -301,16 +324,14 @@ describe("Exception Mappers", () => {
       });
 
       it("should preserve all exception properties in business logic exceptions", () => {
-        // Test that all specific exception properties are preserved
         const countryException = new CountryMismatchException(
           "Test address",
-          "Australia", 
+          "Australia",
           "USA"
         );
 
         const result = createErrorFromException(countryException);
 
-        // Verify all expected properties are preserved
         expect(result.details).toHaveProperty("expectedCountry");
         expect(result.details).toHaveProperty("actualCountry");
         expect(result.details).toHaveProperty("query");

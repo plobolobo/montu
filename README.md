@@ -1,34 +1,60 @@
 # Montu Design Assignment
 
-This repository contains the solution for the Montu take-home assignment, consisting of two parts:
+This repository contains the solution for the Montu take-home assignment, consisting of two main components:
 
-## Part 1: Node.js TypeScript Library
+## 📚 Part 1: QuickRoute Address Parser Library
 
-Located in the `library/` directory, this contains the TypeScript library implementation.
+**[→ View Library Documentation](./library/README.md)**
 
-## Part 2: System Design
+A robust NestJS library for parsing Australian addresses using the TomTom Search API with comprehensive error handling and enterprise-grade reliability.
 
-Located in the `system-design/` directory, this contains the system design documentation and diagrams.
+**Key Features:**
 
-## Getting Started
+- 🇦🇺 Australia-only address validation with country filtering
+- 🔌 TomTom Search API v2 integration
+- 🛡️ Full TypeScript support with Zod schema validation
+- 🔄 Global exception filters and HTTP error interceptors
+- 🧪 291 tests with comprehensive coverage
 
-### Library Development
+**Quick Start:**
 
 ```bash
-cd library
+cd library/
 npm install
-npm run build
 npm test
 ```
 
-### System Design
+## 🏗️ Part 2: Appointment Scheduling System Design
 
-See the `system-design/` directory for architecture diagrams and documentation.
+**[→ View System Design Documentation](./system-design/README.md)**
 
-## Project Structure
+A comprehensive system design for a healthcare appointment scheduling platform using microservices architecture with event-driven communication.
+
+**Key Features:**
+
+- 🔐 Privacy-by-design with strong pseudonymity
+- ⚡ Real-time updates via Server-Sent Events (SSE)
+- 🌐 AWS-based microservices architecture
+- 📊 Comprehensive audit logging and RBAC
+- 🔄 Automatic doctor re-assignment capabilities
+
+**Architecture Overview:**
+
+- **[Infrastructure & Implementation](./system-design/infrastructure.md)**
+- **[Operations & Compliance](./system-design/operations.md)**
+
+## 📁 Project Structure
 
 ```
-├── library/           # Node.js TypeScript library
-├── system-design/     # System design documentation
-└── README.md         # This file
+├── library/                    # QuickRoute Address Parser Library
+│   ├── src/                   # TypeScript source code
+│   ├── __tests__/             # Comprehensive test suite (291 tests)
+│   ├── package.json           # Library dependencies and scripts
+│   └── README.md              # Library documentation
+├── system-design/             # Appointment System Design
+│   ├── img/                   # Architecture diagrams
+│   ├── infrastructure.md      # Infrastructure documentation
+│   ├── operations.md          # Operations and compliance
+│   └── README.md              # System design overview
+└── README.md                  # This overview file
 ```

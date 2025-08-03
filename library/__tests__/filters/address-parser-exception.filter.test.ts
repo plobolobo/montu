@@ -12,7 +12,6 @@ import {
   InvalidInputException,
 } from "../../src/exceptions";
 
-// Mock the dependencies
 vi.mock("../../src/mappers", () => ({
   createErrorFromException: vi.fn(),
 }));
@@ -53,10 +52,8 @@ describe("AddressParserExceptionFilter", () => {
   };
 
   beforeEach(async () => {
-    // Reset mocks
     vi.clearAllMocks();
 
-    // Setup mock implementations
     (createErrorFromException as any).mockReturnValue(mockErrorMapping);
     (ErrorResponseBuilder.create as any).mockReturnValue(
       mockErrorResponseBuilder
@@ -70,12 +67,10 @@ describe("AddressParserExceptionFilter", () => {
       AddressParserExceptionFilter
     );
 
-    // Mock logger to avoid console output
     vi.spyOn(filter["logger"], "error").mockImplementation(() => {});
     vi.spyOn(filter["logger"], "warn").mockImplementation(() => {});
     vi.spyOn(filter["logger"], "debug").mockImplementation(() => {});
 
-    // Setup mock objects
     mockRequest = {
       url: "/api/address/search",
       method: "POST",
@@ -160,9 +155,7 @@ describe("AddressParserExceptionFilter", () => {
 
     it("should handle missing request properties gracefully", () => {
       const exception = new Error("Test error");
-      mockRequest = {
-        // Missing url, method, headers, correlationId
-      };
+      mockRequest = {};
       mockContext.getRequest.mockReturnValue(mockRequest);
 
       filter.catch(exception, mockHost);

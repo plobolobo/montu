@@ -74,7 +74,6 @@ describe("Idempotency Tests", () => {
     httpService = module.get(HttpService);
     configService = module.get(ConfigService);
 
-    // Setup default config values
     configService.get.mockImplementation((key: string) => {
       switch (key) {
         case "TOMTOM_BASE_URL":
@@ -101,7 +100,6 @@ describe("Idempotency Tests", () => {
     it("should deduplicate identical concurrent requests", async () => {
       httpService.request.mockReturnValue(of(mockSuccessResponse));
 
-      // Make multiple identical concurrent requests
       const query = "123 George Street Sydney";
       const limit = 5;
 
@@ -111,7 +109,6 @@ describe("Idempotency Tests", () => {
 
       const results = await Promise.all(promises);
 
-      // All results should be identical
       expect(results).toHaveLength(3);
       results.forEach((result) => {
         expect(result.results).toHaveLength(1);
@@ -120,17 +117,12 @@ describe("Idempotency Tests", () => {
         );
       });
 
-      // Without proper idempotency, this would be called 3 times
-      // With idempotency, it should only be called once for concurrent identical requests
-      // NOTE: This test documents expected behavior - actual implementation would require
-      // the @Idempotent decorator or manual caching logic
-      expect(httpService.request).toHaveBeenCalledTimes(3); // Current behavior without idempotency
+      expect(httpService.request).toHaveBeenCalledTimes(3);
     });
 
     it("should not deduplicate different requests", async () => {
       httpService.request.mockReturnValue(of(mockSuccessResponse));
 
-      // Make different requests
       const promises = [
         service.searchAddresses("123 George Street Sydney", 5),
         service.searchAddresses("456 Collins Street Melbourne", 5),
@@ -141,7 +133,6 @@ describe("Idempotency Tests", () => {
 
       expect(results).toHaveLength(3);
 
-      // Each different request should result in a separate API call
       expect(httpService.request).toHaveBeenCalledTimes(3);
     });
 
@@ -151,12 +142,10 @@ describe("Idempotency Tests", () => {
       const query = "123 George Street Sydney";
       const limit = 5;
 
-      // Make sequential identical requests
       const result1 = await service.searchAddresses(query, limit);
       const result2 = await service.searchAddresses(query, limit);
       const result3 = await service.searchAddresses(query, limit);
 
-      // Results should be identical
       expect(result1.results[0].address.fullAddress).toBe(
         result2.results[0].address.fullAddress
       );
@@ -164,9 +153,7 @@ describe("Idempotency Tests", () => {
         result3.results[0].address.fullAddress
       );
 
-      // Without caching/idempotency, each sequential call results in a new API call
-      // With proper idempotency and TTL, some of these might be cached
-      expect(httpService.request).toHaveBeenCalledTimes(3); // Current behavior
+      expect(httpService.request).toHaveBeenCalledTimes(3);
     });
   });
 
@@ -174,34 +161,29 @@ describe("Idempotency Tests", () => {
     it("should demonstrate how caching would work with different parameters", async () => {
       httpService.request.mockReturnValue(of(mockSuccessResponse));
 
-      // Same query, different limits should be treated as different requests
       const query = "123 George Street Sydney";
 
       await service.searchAddresses(query, 5);
       await service.searchAddresses(query, 10);
-      await service.searchAddresses(query, 5); // This matches the first request
+      await service.searchAddresses(query, 5);
 
-      // Should result in separate API calls for different parameters
       expect(httpService.request).toHaveBeenCalledTimes(3);
     });
 
     it("should demonstrate cache key generation considerations", async () => {
       httpService.request.mockReturnValue(of(mockSuccessResponse));
 
-      // These should be treated as identical requests (case sensitivity, whitespace)
       const variations = [
         "123 George Street Sydney",
-        "123 george street sydney", // Different case
-        " 123 George Street Sydney ", // Extra whitespace
+        "123 george street sydney",
+        " 123 George Street Sydney ",
       ];
 
-      // Current implementation would treat these as different
-      // Proper idempotency implementation might normalize these
       for (const variation of variations) {
         await service.searchAddresses(variation, 5);
       }
 
-      expect(httpService.request).toHaveBeenCalledTimes(3); // Current behavior
+      expect(httpService.request).toHaveBeenCalledTimes(3);
     });
   });
 
@@ -219,12 +201,10 @@ describe("Idempotency Tests", () => {
         .mockReturnValueOnce(throwError(() => errorResponse))
         .mockReturnValueOnce(of(mockSuccessResponse));
 
-      // First request fails
       await expect(
         service.searchAddresses("123 George Street Sydney", 5)
       ).rejects.toThrow();
 
-      // Second identical request should try again (not return cached error)
       const result = await service.searchAddresses(
         "123 George Street Sydney",
         5
@@ -238,31 +218,26 @@ describe("Idempotency Tests", () => {
   describe("Performance Impact", () => {
     it("should measure response time improvement with caching", async () => {
       httpService.request.mockImplementation(() => {
-        // Simulate API latency using Observable delay
         return of(mockSuccessResponse).pipe(delay(100));
       });
 
       const query = "123 George Street Sydney";
       const limit = 5;
 
-      // First request (cache miss)
       const start1 = Date.now();
       await service.searchAddresses(query, limit);
       const duration1 = Date.now() - start1;
 
-      // Second identical request (potential cache hit)
       const start2 = Date.now();
       await service.searchAddresses(query, limit);
       const duration2 = Date.now() - start2;
 
-      // Without caching, both requests should take similar time
-      // With caching, second request should be much faster
       console.log(
         `First request: ${duration1}ms, Second request: ${duration2}ms`
       );
 
-      expect(duration1).toBeGreaterThan(90); // Account for simulated latency
-      expect(duration2).toBeGreaterThan(90); // Current behavior without caching
+      expect(duration1).toBeGreaterThan(90);
+      expect(duration2).toBeGreaterThan(90);
     });
   });
 });

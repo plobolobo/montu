@@ -1,16 +1,18 @@
 # QuickRoute Address Parser
 
-A robust NestJS library for parsing Australian addresses using the TomTom Search API.
+A robust NestJS library for parsing Australian addresses using the TomTom Search API with comprehensive error handling and enterprise-grade reliability.
 
 ## Features
 
-- 🇦🇺 **Australia-only**: Strict validation for Australian addresses
-- 🔌 **TomTom Integration**: Primary provider using TomTom Search API
-- 🏗️ **Extensible Architecture**: Adapter pattern for future API providers
-- 🛡️ **Type Safety**: Full TypeScript support with comprehensive interfaces
-- ⚡ **Performance**: Built-in caching and request deduplication
-- 🔄 **Resilient**: Retry logic with exponential backoff
-- 🧪 **Well Tested**: Comprehensive test coverage with Vitest
+- 🇦🇺 **Australia-only**: Strict validation for Australian addresses with country filtering
+- 🔌 **TomTom Integration**: Primary provider using TomTom Search API v2
+- 🏗️ **Extensible Architecture**: Provider factory pattern for multiple API providers (Google Maps ready)
+- 🛡️ **Type Safety**: Full TypeScript support with Zod schema validation
+- ⚡ **Performance**: Built-in retry logic with exponential backoff
+- 🔄 **Resilient**: Global exception filters and HTTP error interceptors
+- 📊 **Comprehensive Logging**: Structured logging with correlation IDs
+- 🧪 **Well Tested**: 291 tests with Vitest and comprehensive coverage
+- 🔒 **Production Ready**: Enhanced error handling with security considerations
 
 ## Installation
 
@@ -43,12 +45,22 @@ REQUEST_TIMEOUT=30000
 ```typescript
 // app.module.ts
 import { Module } from "@nestjs/common";
+import { ConfigModule } from "@nestjs/config";
 import { QuickrouteAddressParserModule } from "quickroute-address-parser";
 
 @Module({
   imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
     QuickrouteAddressParserModule.register({
       isGlobal: true, // Optional: make globally available
+      // Optional configuration overrides
+      loggingConfig: {
+        enableStackTrace: true,
+        logLevel: "debug",
+        maxStackDepth: 10,
+      },
     }),
   ],
 })
@@ -68,13 +80,19 @@ export class AddressController {
 
   @Get("search")
   async searchAddresses(@Query("q") query: string, @Query("limit") limit = 10) {
-    const result = await this.addressParser.searchAddresses(query, limit);
-    return {
-      success: true,
-      results: result.results,
-      metadata: result.metadata,
-      provider: this.addressParser.getProviderName(),
-    };
+    try {
+      const result = await this.addressParser.searchAddresses(query, limit);
+      return {
+        success: true,
+        results: result.results,
+        metadata: result.metadata,
+        provider: this.addressParser.getProviderName(),
+      };
+    } catch (error) {
+      // Errors are automatically handled by the library's global exception filter
+      // with proper HTTP status codes and structured error responses
+      throw error;
+    }
   }
 }
 ```
@@ -137,10 +155,11 @@ Search for Australian address suggestions with detailed metadata.
 
 **Throws:**
 
-- `InvalidInputException`: Invalid query length or parameters
-- `NoResultsException`: No addresses found for query
-- `CountryMismatchException`: Non-Australian addresses returned
-- `TomTomAPIException`: TomTom API errors
+- `InvalidInputException`: Invalid query length or parameters (400 Bad Request)
+- `NoResultsException`: No addresses found for query (404 Not Found)
+- `CountryMismatchException`: Non-Australian addresses returned (422 Unprocessable Entity)
+- `ProviderException`: TomTom API errors (500+ depending on provider error type)
+- `ConfigurationException`: Missing or invalid API configuration (500 Internal Server Error)
 
 #### `getProviderName(): string`
 
@@ -171,20 +190,55 @@ Returns the name of the current address provider (`"TomTom"`).
 
 ## Error Handling
 
-The library provides detailed error types for different scenarios:
+The library provides comprehensive error handling with automatic HTTP status code mapping:
+
+### Automatic Error Handling
+
+The library includes a global exception filter that automatically converts exceptions to proper HTTP responses with correlation IDs for tracking:
 
 ```typescript
+// All errors are automatically handled and include:
+{
+  "error": "Human readable error message",
+  "statusCode": 400, // Appropriate HTTP status code
+  "timestamp": "2025-01-08T10:12:16.000Z",
+  "path": "/addresses/search",
+  "correlationId": "uuid-1234-5678-9abc",
+  "context": {
+    // Additional context based on error type
+    "provider": "TomTom",
+    "query": "user input",
+    "limit": 10
+  }
+}
+```
+
+### Manual Error Handling (Optional)
+
+For custom error handling, you can catch specific exception types:
+
+```typescript
+import {
+  InvalidInputException,
+  NoResultsException,
+  CountryMismatchException,
+  ProviderException,
+  ConfigurationException,
+} from "quickroute-address-parser";
+
 try {
-  const results = await addressParser.parseAddress("Collins St Melbourne");
+  const results = await addressParser.searchAddresses("Collins St Melbourne");
 } catch (error) {
   if (error instanceof InvalidInputException) {
-    // Handle invalid input (query too short/long, invalid limit)
+    // Handle invalid input (query too short/long, invalid limit) - 400
   } else if (error instanceof NoResultsException) {
-    // Handle no results found
+    // Handle no results found - 404
   } else if (error instanceof CountryMismatchException) {
-    // Handle non-Australian results
-  } else if (error instanceof TomTomAPIException) {
-    // Handle TomTom API errors (authentication, rate limits, etc.)
+    // Handle non-Australian results - 422
+  } else if (error instanceof ProviderException) {
+    // Handle TomTom API errors (authentication, rate limits, etc.) - 500+
+  } else if (error instanceof ConfigurationException) {
+    // Handle missing configuration - 500
   }
 }
 ```
@@ -194,74 +248,106 @@ try {
 ### Basic Address Search
 
 ```typescript
-const suggestions = await addressParser.parseAddress(
+const result = await addressParser.searchAddresses(
   "123 Collins Street Melbourne"
 );
 
-// Returns:
-[
-  {
-    id: "BZh2IikG98CrrMCwZ0N8ug",
-    text: "123 Collins Street, Mentone, VIC, 3194",
-    score: 8.24,
-    address: {
-      fullAddress: "123 Collins Street, Mentone, VIC, 3194",
-      streetNumber: "123",
-      streetName: "Collins Street",
-      suburb: "Mentone",
-      municipality: "Melbourne",
-      state: "VIC",
-      postcode: "3194",
-      country: "Australia",
-      coordinates: {
-        lat: -37.980283,
-        lon: 145.067699,
-      },
-      raw: {
-        /* Original TomTom response */
+// Returns structured response with metadata:
+{
+  results: [
+    {
+      id: "BZh2IikG98CrrMCwZ0N8ug",
+      text: "123 Collins Street, Mentone, VIC, 3194",
+      score: 8.24,
+      address: {
+        fullAddress: "123 Collins Street, Mentone, VIC, 3194",
+        streetNumber: "123",
+        streetName: "Collins Street",
+        suburb: "Mentone",
+        municipality: "Melbourne",
+        state: "VIC",
+        postcode: "3194",
+        country: "Australia",
+        coordinates: {
+          lat: -37.980283,
+          lon: 145.067699,
+        },
+        raw: {
+          /* Original TomTom response data */
+        },
       },
     },
-  },
-];
+  ],
+  metadata: {
+    query: "123 Collins Street Melbourne",
+    limit: 10,
+    resultCount: 1,
+    warnings: []
+  }
+}
 ```
 
 ### Limited Results
 
 ```typescript
-const suggestions = await addressParser.parseAddress("George Street Sydney", 5);
-// Returns maximum 5 suggestions
+const result = await addressParser.searchAddresses("George Street Sydney", 5);
+// Returns maximum 5 suggestions with metadata
+```
+
+### Handling Validation Warnings
+
+```typescript
+const result = await addressParser.searchAddresses("xy"); // Too short
+// Throws InvalidInputException automatically
+
+const result = await addressParser.searchAddresses("valid query");
+if (result.metadata.warnings.length > 0) {
+  console.log("Validation warnings:", result.metadata.warnings);
+}
 ```
 
 ## Development
+
+### Prerequisites
+
+```bash
+# Install dependencies
+npm install
+
+# Copy environment variables
+cp .env.example .env
+# Add your TomTom API key to .env
+```
 
 ### Building
 
 ```bash
 npm run build
+npm run clean  # Clean build artifacts
 ```
 
 ### Testing
 
 ```bash
-npm run test
-npm run test:watch
-npm run test:coverage
+npm run test           # Run all tests
+npm run test:watch     # Run tests in watch mode
+npm run test:coverage  # Run tests with coverage report
 ```
 
-### Linting
+### Development
 
 ```bash
-npm run lint
+npm run dev            # Build in watch mode
+npm run lint           # Lint TypeScript files
 ```
 
-## License
+### Architecture
 
-MIT License. See LICENSE file for details.
+The library uses a modern NestJS architecture with:
 
-## Contributing
-
-Please read our contributing guidelines before submitting pull requests.
-
-## Support
-
-For issues and questions, please use the GitHub issue tracker.
+- **Provider Pattern**: Extensible provider system (TomTom, Google Maps ready)
+- **Global Exception Filter**: Automatic error handling with correlation IDs
+- **HTTP Error Interceptor**: Automatic HTTP error transformation
+- **Zod Validation**: Runtime type safety and input validation
+- **Structured Logging**: Comprehensive logging with context
+- **Retry Logic**: Built-in retry with exponential backoff

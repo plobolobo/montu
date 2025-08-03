@@ -62,7 +62,7 @@ describe("Address Response DTOs", () => {
     it("should reject invalid postcode format", () => {
       const invalidAddress = {
         ...validAddress,
-        postcode: "12345", // 5 digits instead of 4
+        postcode: "12345",
       };
       const result = AddressResponseSchema.safeParse(invalidAddress);
       expect(result.success).toBe(false);
@@ -71,7 +71,7 @@ describe("Address Response DTOs", () => {
     it("should reject invalid state", () => {
       const invalidAddress = {
         ...validAddress,
-        state: "XYZ", // Invalid Australian state
+        state: "XYZ",
       };
       const result = AddressResponseSchema.safeParse(invalidAddress);
       expect(result.success).toBe(false);

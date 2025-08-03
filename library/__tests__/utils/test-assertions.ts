@@ -54,7 +54,6 @@ export const addressAssertions = {
       })
     );
 
-    // Assert score is between 0 and 1
     expect(actual.score).toBeGreaterThanOrEqual(0);
     expect(actual.score).toBeLessThanOrEqual(1);
   },

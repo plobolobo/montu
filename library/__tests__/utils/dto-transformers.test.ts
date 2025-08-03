@@ -8,7 +8,6 @@ import { ISuggestion, IAddress, ICoordinates } from "../../src/interfaces";
 import { AddressResponseDto, SearchResponseDto } from "../../src/dto";
 
 describe("DTO Transformers", () => {
-  // Mock data setup
   const mockCoordinates: ICoordinates = {
     lat: -33.8688,
     lon: 151.2093,
@@ -131,13 +130,11 @@ describe("DTO Transformers", () => {
     it("should validate schema compliance", () => {
       const result = transformSuggestionToDto(mockSuggestion);
 
-      // Check that all required fields are present
       expect(result).toHaveProperty("id");
       expect(result).toHaveProperty("fullAddress");
       expect(result).toHaveProperty("coordinates");
       expect(result).toHaveProperty("confidence");
 
-      // Check that coordinates have required lat/lon
       expect(result.coordinates).toHaveProperty("lat");
       expect(result.coordinates).toHaveProperty("lon");
       expect(typeof result.coordinates.lat).toBe("number");
@@ -165,7 +162,6 @@ describe("DTO Transformers", () => {
 
       const result = transformSuggestionToDto<CustomRawData>(customSuggestion);
 
-      // Should work the same regardless of raw data type
       expect(result.id).toBe(mockSuggestion.id);
       expect(result.confidence).toBe(mockSuggestion.score);
     });
@@ -356,12 +352,10 @@ describe("DTO Transformers", () => {
     it("should validate schema compliance", () => {
       const result = createSearchResponseDto([mockAddressDto], baseMetadata);
 
-      // Check main structure
       expect(result).toHaveProperty("results");
       expect(result).toHaveProperty("metadata");
       expect(result).toHaveProperty("success");
 
-      // Check metadata structure
       expect(result.metadata).toHaveProperty("query");
       expect(result.metadata).toHaveProperty("limit");
       expect(result.metadata).toHaveProperty("provider");
@@ -370,7 +364,6 @@ describe("DTO Transformers", () => {
       expect(result.metadata).toHaveProperty("resultCount");
       expect(result.metadata).toHaveProperty("warnings");
 
-      // Check types
       expect(typeof result.success).toBe("boolean");
       expect(Array.isArray(result.results)).toBe(true);
       expect(Array.isArray(result.metadata.warnings)).toBe(true);

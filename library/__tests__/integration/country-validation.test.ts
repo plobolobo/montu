@@ -64,9 +64,9 @@ describe("Country Validation Integration", () => {
 
     it("should handle country validation alongside other validation errors", () => {
       const input = {
-        query: "a", // Too short
-        limit: 101, // Too high
-        country: "US", // Invalid country
+        query: "a",
+        limit: 101,
+        country: "US",
       };
 
       const result = validateAddressInput(input);
@@ -100,7 +100,7 @@ describe("Country Validation Integration", () => {
       expect(result.isValid).toBe(true);
 
       if (result.isValid) {
-        expect(result.data.country).toBe("Australia"); // Zod trim happens during parse
+        expect(result.data.country).toBe("Australia");
       }
     });
   });

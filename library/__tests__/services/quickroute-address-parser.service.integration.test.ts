@@ -98,12 +98,10 @@ describe("QuickrouteAddressParserService - Integration Tests", () => {
 
   describe("input validation", () => {
     it("should validate query length boundaries", async () => {
-      // Test minimum length
       await expect(service.searchAddresses("A", 10)).rejects.toThrow(
         BadRequestException
       );
 
-      // Test maximum length
       const longQuery = "A".repeat(201);
       await expect(service.searchAddresses(longQuery, 10)).rejects.toThrow(
         BadRequestException
@@ -111,12 +109,10 @@ describe("QuickrouteAddressParserService - Integration Tests", () => {
     });
 
     it("should validate limit boundaries", async () => {
-      // Test minimum limit
       await expect(service.searchAddresses("Sydney", 0)).rejects.toThrow(
         BadRequestException
       );
 
-      // Test maximum limit
       await expect(service.searchAddresses("Sydney", 101)).rejects.toThrow(
         BadRequestException
       );

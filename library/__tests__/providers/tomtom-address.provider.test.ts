@@ -48,7 +48,6 @@ describe("TomTomAddressProvider", () => {
     httpService = module.get(HttpService);
     configService = module.get(ConfigService);
 
-    // Setup default config values
     configService.get.mockImplementation((key: string) => {
       switch (key) {
         case "TOMTOM_BASE_URL":
@@ -254,14 +253,11 @@ describe("TomTomAddressProvider", () => {
 
       httpService.request.mockReturnValue(of(mockResponse));
 
-      // Mock logger to verify logging
       const loggerSpy = vi.spyOn(provider["logger"], "debug");
 
       try {
         await provider.getSuggestions("test query", 5);
-      } catch (error) {
-        // Expected to throw NoResultsException
-      }
+      } catch (error) {}
 
       expect(loggerSpy).toHaveBeenCalledWith(
         expect.stringContaining("Making TomTom API request"),
@@ -292,7 +288,6 @@ describe("TomTomAddressProvider", () => {
         position: { lat: -33.8688, lon: 151.2093 },
       };
 
-      // Access private method for testing
       const suggestion = provider["mapToSuggestion"](tomtomResult);
 
       expect(suggestion.id).toBe("AU/PAD/p0/19616899");

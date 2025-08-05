@@ -1,6 +1,6 @@
 {
   "name": "@globolobo/quickroute-address-parser",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "NestJS library for parsing Australian addresses using TomTom Search API - works standalone or as NestJS module",
   "main": "dist/index.cjs",
   "module": "dist/index.js",

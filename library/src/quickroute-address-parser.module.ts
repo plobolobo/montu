@@ -48,7 +48,7 @@ export class QuickrouteAddressParserModule {
           load: [
             () => {
               const config = {
-                API_KEY: options.apiKey,
+                TOMTOM_API_KEY: options.apiKey,
                 ...(options.baseUrl && { BASE_URL: options.baseUrl }),
                 ...(options.timeout && { REQUEST_TIMEOUT: options.timeout }),
                 ...(options.retries && { RETRY_ATTEMPTS: options.retries }),

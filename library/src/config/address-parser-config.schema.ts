@@ -2,7 +2,7 @@ import { z } from "zod";
 import { TOMTOM_BASE_URL, AUSTRALIA } from "../constants";
 
 export const AddressParserConfigSchema = z.object({
-  API_KEY: z.string().min(1, "API key is required"),
+  TOMTOM_API_KEY: z.string().min(1, "API key is required"),
   BASE_URL: z.string().url().default(TOMTOM_BASE_URL),
   VERSION: z.string().default("2"),
   COUNTRY_SET: z.string().default(AUSTRALIA.COUNTRY_CODE),

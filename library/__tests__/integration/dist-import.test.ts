@@ -128,7 +128,7 @@ describe("Distribution Import Tests", () => {
   describe("Config-Only Approach Validation", () => {
     it("should work without any environment variables", async () => {
       // Clear any potential environment variables
-      delete process.env.API_KEY;
+      delete process.env.TOMTOM_API_KEY;
       delete process.env.BASE_URL;
 
       const standaloneModule = await import("../../dist/standalone.cjs");
@@ -146,7 +146,7 @@ describe("Distribution Import Tests", () => {
 
     it("should validate API key is provided through config for main module", async () => {
       // Clear environment variables
-      delete process.env.API_KEY;
+      delete process.env.TOMTOM_API_KEY;
 
       const { QuickrouteAddressParserModule } = await import(
         "../../dist/index.cjs"

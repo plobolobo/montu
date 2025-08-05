@@ -6,15 +6,18 @@ This repository contains the solution for the Montu take-home assignment, consis
 
 **[→ View Library Documentation](./library/README.md)**
 
-A robust NestJS library for parsing Australian addresses using the TomTom Search API with comprehensive error handling and enterprise-grade reliability.
+A robust NestJS library for parsing Australian addresses using the TomTom Search API with comprehensive error handling and enterprise-grade reliability. Features a config-only approach with no environment variable dependencies.
 
 **Key Features:**
 
 - 🇦🇺 Australia-only address validation with country filtering
 - 🔌 TomTom Search API v2 integration
+- ⚙️ **Config-only approach** - no environment variables required
 - 🛡️ Full TypeScript support with Zod schema validation
 - 🔄 Global exception filters and HTTP error interceptors
-- 🧪 291 tests with comprehensive coverage
+- 📦 **Standalone & module usage** - flexible integration options
+- 🧪 **126 comprehensive tests** including integration testing
+- 📘 **npm published** - ready for production use
 
 **Quick Start:**
 
@@ -22,6 +25,7 @@ A robust NestJS library for parsing Australian addresses using the TomTom Search
 cd library/
 npm install
 npm test
+npm run build  # Build for distribution
 ```
 
 ## 🏗️ Part 2: Appointment Scheduling System Design
@@ -48,7 +52,13 @@ A comprehensive system design for a healthcare appointment scheduling platform u
 ```
 ├── library/                    # QuickRoute Address Parser Library
 │   ├── src/                   # TypeScript source code
-│   ├── __tests__/             # Comprehensive test suite (291 tests)
+│   ├── __tests__/             # Comprehensive test suite (126 tests)
+│   │   ├── integration/       # Integration tests for distribution
+│   │   ├── dto/              # Data transfer object tests
+│   │   ├── services/         # Service layer tests
+│   │   └── providers/        # Provider tests
+│   ├── dist/                  # Built distribution files
+│   ├── examples/              # Usage examples
 │   ├── package.json           # Library dependencies and scripts
 │   └── README.md              # Library documentation
 ├── system-design/             # Appointment System Design

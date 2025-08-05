@@ -59,7 +59,6 @@ export default [
     ],
     plugins: commonPlugins,
     external: (id) => {
-      // Only externalize npm packages, not relative paths or absolute paths
       return !id.startsWith(".") && !id.startsWith("/") && !id.includes("src/");
     },
   },
@@ -99,7 +98,6 @@ export default [
       }),
     ],
     external: (id) => {
-      // Externalize npm packages (including tslib) but bundle local modules
       return !id.startsWith(".") && !id.startsWith("/") && !id.includes("src/");
     },
     treeshake: {
@@ -112,7 +110,7 @@ export default [
     plugins: [dts()],
   },
   {
-    input: "src/standalone.d.ts",
+    input: "src/standalone.ts",
     output: { file: "dist/standalone.d.ts", format: "esm" },
     plugins: [dts()],
   },

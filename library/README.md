@@ -1,6 +1,6 @@
 # Quickroute Address Parser
 
-A powerful NestJS library for parsing Australian addresses that works both as a **NestJS module** and as a **standalone application**.
+A powerful NestJS library for parsing Australian addresses that works both as a **NestJS module** and as a **standalone module**.
 
 ## Features
 
@@ -9,6 +9,12 @@ A powerful NestJS library for parsing Australian addresses that works both as a 
 - ✅ **Provider Support**: TomTom integration
 - ✅ **Built-in Validation**: Automatic input validation with warnings
 - ✅ **Full TypeScript Support**: Complete type safety
+
+## Design Decision Note:
+
+In a production environment, I would typically recommend implementing either a framework-agnostic solution or a dedicated NestJS module, rather than supporting both approaches. This dual implementation introduces additional build complexity that may not be justified in most use cases.
+
+The choice would ultimately depend on the target audience and integration requirements. While I generally favor simpler, framework-agnostic solutions for broader compatibility, I've implemented both approaches here to showcase comprehensive NestJS expertise and provide maximum flexibility for different integration scenarios.
 
 ## Installation
 
@@ -130,20 +136,6 @@ export class AddressController {
   }
 }
 ```
-
-## Environment Variables
-
-```bash
-# Required
-TOMTOM_API_KEY=your_tomtom_api_key_here
-
-# Optional
-TOMTOM_BASE_URL=https://api.tomtom.com
-REQUEST_TIMEOUT=30000
-RETRY_ATTEMPTS=3
-```
-
-You can also use a `.env` file in your project root.
 
 ## API Reference
 

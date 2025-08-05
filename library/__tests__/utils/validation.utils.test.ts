@@ -4,7 +4,7 @@ import {
   getValidatedDataOrThrow,
 } from "../../src/utils/validation.utils";
 import { BadRequestException } from "@nestjs/common";
-import { InvalidInputException } from "../../src/exceptions";
+import { BadRequestException } from "@nestjs/common";
 
 describe("validateAddressInput", () => {
   describe("valid inputs", () => {

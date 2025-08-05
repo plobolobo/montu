@@ -5,7 +5,6 @@ import { vi } from "vitest";
 import {
   createMockHttpService,
   createMockConfigService,
-  createMockLogger,
 } from "./test-factories";
 
 export const setupMockForLogging = (
@@ -87,7 +86,7 @@ export const standardAfterEach = () => {
 };
 
 export const assertMockCall = {
-  httpRequest: (mockHttpService: any, expectedConfig: any, callIndex = 0) => {
+  httpRequest: (mockHttpService: any, expectedConfig: any) => {
     expect(mockHttpService.request).toHaveBeenCalledWith(
       expect.objectContaining(expectedConfig)
     );
@@ -166,25 +165,16 @@ export const testScenarios = {
     },
   },
 
-  /**
-   * Empty results scenario
-   */
   emptyResponse: {
     status: 200,
     data: { results: [] },
   },
 
-  /**
-   * Network error scenario
-   */
   networkError: {
     code: "ENOTFOUND",
     message: "getaddrinfo ENOTFOUND api.example.com",
   },
 
-  /**
-   * Authentication error scenario
-   */
   authError: {
     response: {
       status: 401,

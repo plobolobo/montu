@@ -1,4 +1,4 @@
-import { ProviderExceptionUnion } from "../exceptions/provider.exceptions";
+import { HttpException } from "@nestjs/common";
 
 export interface ProviderErrorContext {
   readonly query: string;
@@ -6,23 +6,12 @@ export interface ProviderErrorContext {
   readonly provider: string;
 }
 
-export interface HttpErrorHandler {
-  handleError(error: unknown, context: ProviderErrorContext): never;
-}
-
-/**
- * All possible exceptions that can be thrown by providers
- */
-export type AllProviderExceptions = ProviderExceptionUnion | Error;
-
-/**
- * Simplified error mapping - just returns the exception to throw
- */
+export type AllProviderExceptions = HttpException | Error;
 export interface ProviderErrorMapper {
   mapHttpError(
     status: number,
     provider: string,
-    errorData?: any
+    errorData?: unknown
   ): AllProviderExceptions;
   mapNetworkError(provider: string): AllProviderExceptions;
   mapUnknownError(error: unknown, provider: string): AllProviderExceptions;

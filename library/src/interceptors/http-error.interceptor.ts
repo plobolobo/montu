@@ -13,16 +13,14 @@ import {
   AllProviderExceptions,
 } from "../services/provider-error-handler.types";
 import {
-  ProviderException,
-  ProviderAuthenticationError,
-  ProviderRateLimitError,
-  ProviderServiceError,
-  ProviderNetworkError,
-  ProviderUnknownError,
-  InvalidInputException,
-  NoResultsException,
-  CountryMismatchException,
-} from "../exceptions";
+  HttpException,
+  BadRequestException,
+  UnauthorizedException,
+  HttpStatus,
+  BadGatewayException,
+  ServiceUnavailableException,
+  InternalServerErrorException,
+} from "@nestjs/common";
 
 export interface HttpErrorInterceptorOptions {
   timeoutMs?: number;
@@ -39,38 +37,56 @@ export class HttpErrorInterceptor implements NestInterceptor {
     this.defaultErrorMapper = {
       mapHttpError: (
         status: number,
-        provider: string,
-        errorData?: any
+        provider: string
       ): AllProviderExceptions => {
         if (status === 400) {
-          return new InvalidInputException("Invalid query parameters");
+          return new BadRequestException({
+            message: "Invalid query parameters",
+            provider,
+            statusCode: status,
+          });
         }
         if (status === 401 || status === 403) {
-          return new ProviderAuthenticationError(
+          return new UnauthorizedException({
+            message: `${provider} authentication failed`,
             provider,
-            "Invalid API key or insufficient permissions"
-          );
+            details: "Invalid API key or insufficient permissions",
+            statusCode: status,
+          });
         }
         if (status === 429) {
-          return new ProviderRateLimitError(provider, "Too many requests");
-        }
-        if (status && status >= 500) {
-          return new ProviderServiceError(
-            provider,
-            `Service unavailable (HTTP ${status})`
+          return new HttpException(
+            {
+              message: `${provider} rate limit exceeded`,
+              provider,
+              details: "Too many requests",
+              statusCode: status,
+            },
+            HttpStatus.TOO_MANY_REQUESTS
           );
         }
-        return new ProviderException(
+        if (status && status >= 500) {
+          return new BadGatewayException({
+            message: `${provider} service unavailable`,
+            provider,
+            details: `Service unavailable (HTTP ${status})`,
+            statusCode: status,
+          });
+        }
+        return new BadGatewayException({
+          message: `Request failed with status ${status}`,
           provider,
-          "HTTPError",
-          `HTTP ${status}`,
-          `Request failed with status ${status}`,
-          status || 500
-        );
+          details: `HTTP ${status}`,
+          statusCode: status || 500,
+        });
       },
 
       mapNetworkError: (provider: string): AllProviderExceptions => {
-        return new ProviderNetworkError(provider, "Failed to connect to API");
+        return new ServiceUnavailableException({
+          message: `Failed to connect to ${provider}`,
+          provider,
+          details: "Failed to connect to API",
+        });
       },
 
       mapUnknownError: (
@@ -79,26 +95,20 @@ export class HttpErrorInterceptor implements NestInterceptor {
       ): AllProviderExceptions => {
         const errorMessage =
           error instanceof Error ? error.message : "Unknown error occurred";
-        return new ProviderUnknownError(provider, errorMessage);
+        return new InternalServerErrorException({
+          message: `${provider} unexpected error`,
+          provider,
+          details: errorMessage,
+        });
       },
 
       shouldRethrowException: (error: unknown): boolean => {
-        return (
-          error instanceof InvalidInputException ||
-          error instanceof NoResultsException ||
-          error instanceof CountryMismatchException ||
-          error instanceof ProviderException ||
-          error instanceof ProviderAuthenticationError ||
-          error instanceof ProviderRateLimitError ||
-          error instanceof ProviderServiceError ||
-          error instanceof ProviderNetworkError ||
-          error instanceof ProviderUnknownError
-        );
+        return error instanceof HttpException;
       },
     };
   }
 
-  intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
+  intercept<T>(context: ExecutionContext, next: CallHandler<T>): Observable<T> {
     const { timeoutMs = 30000, provider, errorMapper } = this.options;
     const activeErrorMapper = errorMapper || this.defaultErrorMapper;
 
@@ -154,20 +164,21 @@ export class HttpErrorInterceptor implements NestInterceptor {
       "name" in error &&
       error.name === "TimeoutError"
     ) {
-      return new ProviderServiceError(
-        context.provider,
-        `Request timeout after ${this.options.timeoutMs}ms`
-      );
+      return new BadGatewayException({
+        message: `${context.provider} service unavailable`,
+        provider: context.provider,
+        details: `Request timeout after ${this.options.timeoutMs}ms`,
+      });
     }
 
     if (error && typeof error === "object" && "response" in error) {
       const httpError = error as {
         response?: {
           status?: number;
-          data?: any;
+          data?: unknown;
           statusText?: string;
         };
-        request?: any;
+        request?: unknown;
       };
 
       const { response } = httpError;

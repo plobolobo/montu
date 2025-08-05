@@ -2,9 +2,6 @@ import { z } from "zod";
 import { QUERY_VALIDATION } from "../config/validation.constants";
 import { AUSTRALIA } from "../constants";
 
-/**
- * Validates if a country value represents Australia
- */
 const isValidAustralianCountry = (value: string): boolean => {
   const normalizedValue = value.toLowerCase().trim();
   const validAustralianValues = [
@@ -37,7 +34,7 @@ export const AddressSearchSchema = z.object({
     .trim()
     .optional()
     .refine(
-      (value) => {
+      (value: string | undefined): boolean => {
         if (value === undefined) return true;
         return isValidAustralianCountry(value);
       },

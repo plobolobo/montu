@@ -1,16 +1,7 @@
-/**
- * Custom assertion utilities for more specific and meaningful test assertions
- */
 import { expect } from "vitest";
 import { validationPatterns } from "./test-setup";
 
-/**
- * Assertion utilities for address-related data
- */
 export const addressAssertions = {
-  /**
-   * Assert that an object matches the expected address structure
-   */
   toMatchAddress: (actual: any, expected: Partial<any>) => {
     expect(actual).toEqual(
       expect.objectContaining({
@@ -31,9 +22,6 @@ export const addressAssertions = {
     );
   },
 
-  /**
-   * Assert that coordinates are within Australia's bounds
-   */
   toBeWithinAustralia: (coordinates: { lat: number; lon: number }) => {
     expect(coordinates.lat).toBeGreaterThan(-44);
     expect(coordinates.lat).toBeLessThan(-10);
@@ -41,9 +29,6 @@ export const addressAssertions = {
     expect(coordinates.lon).toBeLessThan(154);
   },
 
-  /**
-   * Assert that a suggestion matches expected structure
-   */
   toMatchSuggestion: (actual: any, expected: Partial<any> = {}) => {
     expect(actual).toEqual(
       expect.objectContaining({
@@ -59,13 +44,7 @@ export const addressAssertions = {
   },
 };
 
-/**
- * Assertion utilities for error responses
- */
 export const errorAssertions = {
-  /**
-   * Assert that an error response matches expected structure
-   */
   toMatchErrorResponse: (
     actual: any,
     expectedStatus: number,
@@ -86,16 +65,10 @@ export const errorAssertions = {
     );
   },
 
-  /**
-   * Assert that an exception has the expected provider prefix
-   */
   toHaveProviderPrefix: (error: Error, provider: string) => {
     expect(error.message).toMatch(new RegExp(`^${provider}\\s`));
   },
 
-  /**
-   * Assert that an error context contains required fields
-   */
   toMatchErrorContext: (actual: any, expected: Partial<any> = {}) => {
     expect(actual).toEqual(
       expect.objectContaining({
@@ -109,13 +82,7 @@ export const errorAssertions = {
   },
 };
 
-/**
- * Assertion utilities for HTTP interactions
- */
 export const httpAssertions = {
-  /**
-   * Assert that HTTP service was called with expected configuration
-   */
   toHaveBeenCalledWithConfig: (
     mockHttpService: any,
     expectedConfig: Partial<any>
@@ -125,16 +92,10 @@ export const httpAssertions = {
     );
   },
 
-  /**
-   * Assert that HTTP service was called the expected number of times
-   */
   toHaveBeenCalledTimes: (mockHttpService: any, times: number) => {
     expect(mockHttpService.request).toHaveBeenCalledTimes(times);
   },
 
-  /**
-   * Assert that headers contain expected authentication
-   */
   toHaveAuthHeader: (actualConfig: any, expectedToken: string) => {
     expect(actualConfig.headers).toEqual(
       expect.objectContaining({
@@ -144,13 +105,7 @@ export const httpAssertions = {
   },
 };
 
-/**
- * Assertion utilities for logging
- */
 export const loggingAssertions = {
-  /**
-   * Assert that logger was called with expected level and message pattern
-   */
   toHaveLoggedMessage: (
     mockLogger: any,
     level: string,
@@ -168,9 +123,6 @@ export const loggingAssertions = {
     expect(found).toBe(true);
   },
 
-  /**
-   * Assert that sensitive data has been masked in logs
-   */
   toHaveMaskedSensitiveData: (logData: any, sensitiveFields: string[]) => {
     sensitiveFields.forEach((field) => {
       if (logData[field] !== undefined) {
@@ -179,9 +131,6 @@ export const loggingAssertions = {
     });
   },
 
-  /**
-   * Assert that structured log entry contains required fields
-   */
   toMatchStructuredLogEntry: (actual: any, expected: Partial<any> = {}) => {
     expect(actual).toEqual(
       expect.objectContaining({
@@ -195,24 +144,15 @@ export const loggingAssertions = {
   },
 };
 
-/**
- * Assertion utilities for mock verification
- */
 export const mockAssertions = {
-  /**
-   * Assert that all expected mocks were called
-   */
   toHaveCalledAllMocks: (mocks: Record<string, any>) => {
-    Object.entries(mocks).forEach(([name, mock]) => {
+    Object.entries(mocks).forEach(([, mock]) => {
       if (mock.mock) {
         expect(mock).toHaveBeenCalled();
       }
     });
   },
 
-  /**
-   * Assert that mock was called with specific arguments at specific index
-   */
   toHaveBeenNthCalledWith: (
     mock: any,
     callIndex: number,
@@ -221,21 +161,12 @@ export const mockAssertions = {
     expect(mock).toHaveBeenNthCalledWith(callIndex, ...expectedArgs);
   },
 
-  /**
-   * Assert that mock was called with object containing specific properties
-   */
   toHaveBeenCalledWithObjectContaining: (mock: any, expectedProps: any) => {
     expect(mock).toHaveBeenCalledWith(expect.objectContaining(expectedProps));
   },
 };
 
-/**
- * Assertion utilities for async operations
- */
 export const asyncAssertions = {
-  /**
-   * Assert that promise resolves within timeout
-   */
   toResolveWithinTimeout: async (promise: Promise<any>, timeoutMs: number) => {
     const start = Date.now();
     await expect(promise).resolves.toBeDefined();
@@ -243,9 +174,6 @@ export const asyncAssertions = {
     expect(duration).toBeLessThan(timeoutMs);
   },
 
-  /**
-   * Assert that promise rejects with expected error type and message
-   */
   toRejectWithError: async (
     promise: Promise<any>,
     errorType: new (...args: any[]) => Error,
@@ -263,13 +191,7 @@ export const asyncAssertions = {
   },
 };
 
-/**
- * Assertion utilities for data validation
- */
 export const validationAssertions = {
-  /**
-   * Assert that data matches Zod schema expectations
-   */
   toMatchZodSchema: (actual: any, expectedFields: string[]) => {
     expectedFields.forEach((field) => {
       expect(actual).toHaveProperty(field);
@@ -277,18 +199,12 @@ export const validationAssertions = {
     });
   },
 
-  /**
-   * Assert that Australian address fields are valid
-   */
   toBeValidAustralianAddress: (address: any) => {
     expect(address.country).toBe("Australia");
     expect(address.postcode).toMatch(validationPatterns.australianPostcode);
     expect(address.state).toMatch(/^(NSW|VIC|QLD|WA|SA|TAS|ACT|NT)$/);
   },
 
-  /**
-   * Assert that confidence score is valid
-   */
   toBeValidConfidenceScore: (score: number) => {
     expect(score).toBeGreaterThanOrEqual(0);
     expect(score).toBeLessThanOrEqual(1);

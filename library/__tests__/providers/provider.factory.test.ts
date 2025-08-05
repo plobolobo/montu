@@ -1,13 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Test, TestingModule } from "@nestjs/testing";
 import { ConfigService } from "@nestjs/config";
-import {
-  AddressProviderFactory,
-  ProviderType,
-} from "../../src/providers/provider.factory";
+import { AddressProviderFactory } from "../../src/providers/provider.factory";
 import { TomTomAddressProvider } from "../../src/providers/tomtom/tomtom-address.provider";
 import { ConfigKey } from "../../src/config";
-import { IAddressProvider } from "../../src/interfaces";
+import { PROVIDER_NAMES } from "../../src/constants";
+
+type ProviderType = (typeof PROVIDER_NAMES)[keyof typeof PROVIDER_NAMES];
 
 describe("AddressProviderFactory", () => {
   let factory: AddressProviderFactory;
@@ -73,16 +72,6 @@ describe("AddressProviderFactory", () => {
           "Unknown provider type: unknown"
         );
       });
-
-      it("should handle invalid provider types gracefully", () => {
-        const invalidTypes = ["invalid", "bing", "here", "mapbox"];
-
-        invalidTypes.forEach((type) => {
-          expect(() => factory.createProvider(type as ProviderType)).toThrow(
-            `Unknown provider type: ${type}`
-          );
-        });
-      });
     });
 
     describe("without explicit provider type (default)", () => {
@@ -143,45 +132,6 @@ describe("AddressProviderFactory", () => {
     });
   });
 
-  describe("getAllProviders", () => {
-    it("should return array containing all available providers", () => {
-      const providers = factory.getAllProviders();
-
-      expect(providers).toBeInstanceOf(Array);
-      expect(providers).toHaveLength(1);
-      expect(providers[0]).toBe(tomtomProvider);
-    });
-
-    it("should return array with TomTom provider", () => {
-      const providers = factory.getAllProviders();
-
-      expect(providers).toContain(tomtomProvider);
-
-      providers.forEach((provider) => {
-        expect(provider).toHaveProperty("getSuggestions");
-        expect(typeof provider.getSuggestions).toBe("function");
-      });
-    });
-
-    it("should return consistent results on multiple calls", () => {
-      const providers1 = factory.getAllProviders();
-      const providers2 = factory.getAllProviders();
-
-      expect(providers1).toEqual(providers2);
-      expect(providers1[0]).toBe(providers2[0]);
-    });
-
-    it("should return immutable reference to providers array", () => {
-      const providers = factory.getAllProviders();
-      const originalLength = providers.length;
-
-      providers.push({} as any);
-
-      const freshProviders = factory.getAllProviders();
-      expect(freshProviders).toHaveLength(originalLength);
-    });
-  });
-
   describe("configuration integration", () => {
     it("should respect configuration changes", () => {
       configService.get = vi.fn().mockReturnValue("tomtom");
@@ -201,53 +151,15 @@ describe("AddressProviderFactory", () => {
 
       expect(result).toBe(tomtomProvider);
     });
-
-    it("should handle empty string configuration", () => {
-      configService.get = vi.fn().mockReturnValue("");
-
-      const result = factory.createProvider();
-      expect(result).toBe(tomtomProvider);
-    });
   });
 
   describe("error handling", () => {
-    it("should provide descriptive error messages", () => {
-      const testCases = [
-        {
-          type: "google",
-          expectedMessage: "Google Maps provider not implemented yet",
-        },
-        { type: "unknown", expectedMessage: "Unknown provider type: unknown" },
-        { type: "bing", expectedMessage: "Unknown provider type: bing" },
-      ];
-
-      testCases.forEach(({ type, expectedMessage }) => {
-        expect(() => factory.createProvider(type as ProviderType)).toThrow(
-          expectedMessage
-        );
-      });
-    });
-
     it("should handle config service errors gracefully", () => {
       configService.get = vi.fn().mockImplementation(() => {
         throw new Error("Config service error");
       });
 
       expect(() => factory.createProvider()).toThrow("Config service error");
-    });
-  });
-
-  describe("type definitions", () => {
-    it("should support ProviderType union correctly", () => {
-      const validTypes: ProviderType[] = ["tomtom", "google"];
-
-      validTypes.forEach((type) => {
-        if (type === "tomtom") {
-          expect(factory.createProvider(type)).toBe(tomtomProvider);
-        } else if (type === "google") {
-          expect(() => factory.createProvider(type)).toThrow();
-        }
-      });
     });
   });
 

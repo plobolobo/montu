@@ -1,30 +1,22 @@
-/**
- * Test data factories for consistent mock object creation across tests
- */
 import { Request, Response } from "express";
 import { ArgumentsHost, ExecutionContext, CallHandler } from "@nestjs/common";
-import { HttpService } from "@nestjs/axios";
-import { ConfigService } from "@nestjs/config";
 import { AxiosResponse, AxiosRequestConfig } from "axios";
-import { Observable, of } from "rxjs";
+import { of } from "rxjs";
 import { vi } from "vitest";
 import {
-  ProviderAuthenticationError,
-  ProviderRateLimitError,
-  ProviderServiceError,
-  ProviderNetworkError,
-  ProviderUnknownError,
-  CountryMismatchException,
-  NoResultsException,
-  InvalidInputException,
-  ConfigurationException,
-} from "../../src/exceptions";
+  BadRequestException,
+  NotFoundException,
+  UnprocessableEntityException,
+  UnauthorizedException,
+  HttpException,
+  HttpStatus,
+  BadGatewayException,
+  ServiceUnavailableException,
+  InternalServerErrorException,
+} from "@nestjs/common";
 import { ErrorContext, ErrorMapping } from "../../src/types";
-import { ISuggestion, IAddress, ICoordinates } from "../../src/interfaces";
+import { ISuggestion, IAddress } from "../../src/interfaces";
 
-/**
- * HTTP Service Mock Factory
- */
 export const createMockHttpService = () => ({
   request: vi.fn(),
   get: vi.fn(),
@@ -37,9 +29,6 @@ export const createMockHttpService = () => ({
   },
 });
 
-/**
- * Config Service Mock Factory
- */
 export const createMockConfigService = (
   overrides: Record<string, any> = {}
 ) => {
@@ -59,9 +48,6 @@ export const createMockConfigService = (
   };
 };
 
-/**
- * Request Mock Factory
- */
 export const createMockRequest = (
   overrides: Partial<Request> = {}
 ): Partial<Request> => ({
@@ -77,18 +63,12 @@ export const createMockRequest = (
   ...overrides,
 });
 
-/**
- * Response Mock Factory
- */
 export const createMockResponse = (): Partial<Response> => ({
   status: vi.fn().mockReturnThis(),
   json: vi.fn().mockReturnThis(),
   send: vi.fn().mockReturnThis(),
 });
 
-/**
- * ArgumentsHost Mock Factory
- */
 export const createMockArgumentsHost = (
   request?: Partial<Request>,
   response?: Partial<Response>
@@ -108,10 +88,6 @@ export const createMockArgumentsHost = (
     getType: vi.fn(),
   } as any;
 };
-
-/**
- * ExecutionContext Mock Factory
- */
 export const createMockExecutionContext = (
   request?: Partial<Request>
 ): ExecutionContext => {
@@ -132,16 +108,9 @@ export const createMockExecutionContext = (
   } as any;
 };
 
-/**
- * CallHandler Mock Factory
- */
 export const createMockCallHandler = <T = any>(data?: T): CallHandler => ({
   handle: vi.fn().mockReturnValue(of(data || { results: [] })),
 });
-
-/**
- * Axios Response Mock Factory
- */
 export const createMockAxiosResponse = <T = any>(
   data?: T,
   overrides: Partial<AxiosResponse> = {}
@@ -167,9 +136,6 @@ export const createMockAxiosResponse = <T = any>(
   ...overrides,
 });
 
-/**
- * Address Interface Mock Factory
- */
 export const createMockAddress = (
   overrides: Partial<IAddress> = {}
 ): IAddress => ({
@@ -189,9 +155,6 @@ export const createMockAddress = (
   ...overrides,
 });
 
-/**
- * Suggestion Interface Mock Factory
- */
 export const createMockSuggestion = <TRaw = any>(
   overrides: Partial<ISuggestion<TRaw>> = {}
 ): ISuggestion<TRaw> => ({
@@ -201,9 +164,6 @@ export const createMockSuggestion = <TRaw = any>(
   ...overrides,
 });
 
-/**
- * Error Context Mock Factory
- */
 export const createMockErrorContext = (
   overrides: Partial<ErrorContext> = {}
 ): ErrorContext => ({
@@ -215,9 +175,6 @@ export const createMockErrorContext = (
   ...overrides,
 });
 
-/**
- * Error Mapping Mock Factory
- */
 export const createMockErrorMapping = (
   overrides: Partial<ErrorMapping> = {}
 ): ErrorMapping => ({
@@ -227,43 +184,74 @@ export const createMockErrorMapping = (
   ...overrides,
 });
 
-/**
- * Exception Factory - Creates specific exception types
- */
 export const createException = {
   providerAuth: (provider = "TomTom", message = "Invalid API key") =>
-    new ProviderAuthenticationError(provider, message),
+    new UnauthorizedException({
+      message: `${provider} authentication failed`,
+      provider,
+      details: message,
+    }),
 
   providerRateLimit: (provider = "TomTom", message = "Rate limit exceeded") =>
-    new ProviderRateLimitError(provider, message),
+    new HttpException(
+      {
+        message: `${provider} rate limit exceeded`,
+        provider,
+        details: message,
+      },
+      HttpStatus.TOO_MANY_REQUESTS
+    ),
 
   providerService: (provider = "TomTom", message = "Service unavailable") =>
-    new ProviderServiceError(provider, message),
+    new BadGatewayException({
+      message: `${provider} service unavailable`,
+      provider,
+      details: message,
+    }),
 
   providerNetwork: (provider = "TomTom", message = "Network error") =>
-    new ProviderNetworkError(provider, message),
+    new ServiceUnavailableException({
+      message: `Failed to connect to ${provider}`,
+      provider,
+      details: message,
+    }),
 
   providerUnknown: (provider = "TomTom", message = "Unknown error") =>
-    new ProviderUnknownError(provider, message),
+    new InternalServerErrorException({
+      message: `${provider} unexpected error`,
+      provider,
+      details: message,
+    }),
 
   countryMismatch: (
     expected = "Australia",
     actual = "USA",
     address = "123 Main St"
-  ) => new CountryMismatchException(expected, actual, address),
+  ) =>
+    new UnprocessableEntityException({
+      message: `Address validation failed: Expected ${expected} address, received ${actual} for "${address}"`,
+      expectedCountry: expected,
+      actualCountry: actual,
+      address,
+    }),
 
-  noResults: (query = "invalid address") => new NoResultsException(query),
+  noResults: (query = "invalid address") =>
+    new NotFoundException({
+      message: `No address suggestions found for query: "${query}"`,
+      query,
+    }),
 
   invalidInput: (message = "Invalid input") =>
-    new InvalidInputException(message),
+    new BadRequestException({
+      message: `Invalid input: ${message}`,
+    }),
 
   configuration: (message = "Configuration error") =>
-    new ConfigurationException(message),
+    new InternalServerErrorException({
+      message: `Configuration error: ${message}`,
+    }),
 };
 
-/**
- * Logger Mock Factory
- */
 export const createMockLogger = () => ({
   error: vi.fn(),
   warn: vi.fn(),
@@ -272,9 +260,6 @@ export const createMockLogger = () => ({
   verbose: vi.fn(),
 });
 
-/**
- * Error Response Builder Mock Factory
- */
 export const createMockErrorResponseBuilder = (overrides: any = {}) => ({
   build: vi.fn().mockReturnValue({
     success: false,
@@ -292,30 +277,18 @@ export const createMockErrorResponseBuilder = (overrides: any = {}) => ({
   ...overrides,
 });
 
-/**
- * Logging Config Mock Factory
- */
 export const createMockLoggingConfig = (overrides: any = {}) => ({
   level: "error",
   format: "json",
   enableCorrelationId: true,
-  enableMetrics: true,
-  sensitiveFields: ["apiKey", "password", "token"],
   enableStackTrace: true,
   maxStackDepth: 10,
   ...overrides,
 });
 
-/**
- * HTTP Adapter Mock Factory
- */
 export const createMockHttpAdapter = () => ({
   reply: vi.fn(),
 });
-
-/**
- * HTTP Adapter Host Mock Factory
- */
 export const createMockHttpAdapterHost = (httpAdapter?: any) => ({
   httpAdapter: httpAdapter || createMockHttpAdapter(),
 });

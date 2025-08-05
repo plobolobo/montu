@@ -3,14 +3,13 @@ import { ConfigService } from "@nestjs/config";
 import { HttpService } from "@nestjs/axios";
 import { TomTomAddressProvider } from "../../src/providers/tomtom/tomtom-address.provider";
 import {
-  ProviderServiceError,
-  ProviderAuthenticationError,
-  ProviderRateLimitError,
-  ProviderNetworkError,
-  NoResultsException,
-  CountryMismatchException,
-  InvalidInputException,
-} from "../../src/exceptions";
+  BadGatewayException,
+  UnauthorizedException,
+  HttpException,
+  ServiceUnavailableException,
+  NotFoundException,
+  UnprocessableEntityException,
+} from "@nestjs/common";
 import { of, throwError } from "rxjs";
 import { AxiosResponse } from "axios";
 import { vi } from "vitest";
@@ -141,10 +140,10 @@ describe("TomTomAddressProvider", () => {
 
       await expect(
         provider.getSuggestions("123 Main Street", 10)
-      ).rejects.toThrow(CountryMismatchException);
+      ).rejects.toThrow(UnprocessableEntityException);
     });
 
-    it("should throw NoResultsException when no results returned", async () => {
+    it("should throw NotFoundException when no results returned", async () => {
       const mockResponse: AxiosResponse = {
         data: { results: [] },
         status: 200,
@@ -157,7 +156,7 @@ describe("TomTomAddressProvider", () => {
 
       await expect(
         provider.getSuggestions("nonexistent address", 10)
-      ).rejects.toThrow(NoResultsException);
+      ).rejects.toThrow(NotFoundException);
     });
 
     it("should handle TomTom API errors with detailedError", async () => {
@@ -178,7 +177,7 @@ describe("TomTomAddressProvider", () => {
 
       await expect(
         provider.getSuggestions("invalid query", 10)
-      ).rejects.toThrow(ProviderServiceError);
+      ).rejects.toThrow(BadGatewayException);
     });
 
     it("should handle HTTP 403 errors", async () => {
@@ -193,7 +192,7 @@ describe("TomTomAddressProvider", () => {
       httpService.request.mockReturnValue(throwError(() => error));
 
       await expect(provider.getSuggestions("Sydney", 10)).rejects.toThrow(
-        ProviderAuthenticationError
+        UnauthorizedException
       );
     });
 
@@ -209,7 +208,7 @@ describe("TomTomAddressProvider", () => {
       httpService.request.mockReturnValue(throwError(() => error));
 
       await expect(provider.getSuggestions("Sydney", 10)).rejects.toThrow(
-        ProviderRateLimitError
+        HttpException
       );
     });
 
@@ -225,7 +224,7 @@ describe("TomTomAddressProvider", () => {
       httpService.request.mockReturnValue(throwError(() => error));
 
       await expect(provider.getSuggestions("Sydney", 10)).rejects.toThrow(
-        ProviderServiceError
+        BadGatewayException
       );
     });
 
@@ -238,7 +237,7 @@ describe("TomTomAddressProvider", () => {
       httpService.request.mockReturnValue(throwError(() => error));
 
       await expect(provider.getSuggestions("Sydney", 10)).rejects.toThrow(
-        ProviderNetworkError
+        ServiceUnavailableException
       );
     });
 

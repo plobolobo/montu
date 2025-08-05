@@ -9,13 +9,13 @@ import {
   BaseHttpService,
   BaseHttpOptions,
 } from "../../src/services/base-http.service";
+import { HttpErrorInterceptor } from "../../src/interceptors/http-error.interceptor";
 import {
-  ProviderAuthenticationError,
-  ProviderRateLimitError,
-  ProviderServiceError,
-  ProviderNetworkError,
-  ProviderUnknownError,
-} from "../../src/exceptions";
+  UnauthorizedException,
+  HttpException,
+  BadGatewayException,
+  InternalServerErrorException,
+} from "@nestjs/common";
 
 class TestHttpService extends BaseHttpService {
   constructor(
@@ -45,10 +45,6 @@ class TestHttpService extends BaseHttpService {
     config?: AxiosRequestConfig
   ): Promise<AxiosResponse<T>> {
     return this.post<T>(url, data, config);
-  }
-
-  public testMapError(error: any, context: any): any {
-    return this.mapError(error, context);
   }
 }
 
@@ -187,7 +183,7 @@ describe("BaseHttpService", () => {
         .mockReturnValue(throwError(() => authError));
 
       await expect(service.testMakeRequest(mockRequestConfig)).rejects.toThrow(
-        ProviderAuthenticationError
+        UnauthorizedException
       );
     });
 
@@ -199,7 +195,7 @@ describe("BaseHttpService", () => {
         .mockReturnValue(throwError(() => rateLimitError));
 
       await expect(service.testMakeRequest(mockRequestConfig)).rejects.toThrow(
-        ProviderRateLimitError
+        HttpException
       );
     });
 
@@ -211,7 +207,7 @@ describe("BaseHttpService", () => {
         .mockReturnValue(throwError(() => serviceError));
 
       await expect(service.testMakeRequest(mockRequestConfig)).rejects.toThrow(
-        ProviderServiceError
+        BadGatewayException
       );
     });
 
@@ -223,7 +219,7 @@ describe("BaseHttpService", () => {
         .mockReturnValue(throwError(() => networkError));
 
       await expect(service.testMakeRequest(mockRequestConfig)).rejects.toThrow(
-        ProviderUnknownError
+        InternalServerErrorException
       );
     });
 
@@ -235,27 +231,17 @@ describe("BaseHttpService", () => {
         .mockReturnValue(throwError(() => timeoutError));
 
       await expect(service.testMakeRequest(mockRequestConfig)).rejects.toThrow(
-        ProviderServiceError
+        BadGatewayException
       );
     });
 
-    it("should log errors", async () => {
-      const errorSpy = vi.spyOn(service["logger"], "error");
+    it("should handle errors through interceptor", async () => {
       const error = new AxiosError("Test error");
       error.response = { status: 500 } as any;
       httpService.request = vi.fn().mockReturnValue(throwError(() => error));
 
-      await expect(
-        service.testMakeRequest(mockRequestConfig)
-      ).rejects.toThrow();
-
-      expect(errorSpy).toHaveBeenCalledWith(
-        expect.stringContaining("TestProvider API error"),
-        expect.objectContaining({
-          error: expect.any(String),
-          context: expect.any(Object),
-          errorType: expect.any(String),
-        })
+      await expect(service.testMakeRequest(mockRequestConfig)).rejects.toThrow(
+        BadGatewayException
       );
     });
   });
@@ -323,121 +309,12 @@ describe("BaseHttpService", () => {
     });
   });
 
-  describe("error mapping", () => {
-    const mockContext = {
-      provider: "TestProvider",
-      query: "test",
-      limit: 10,
-    };
-
-    it("should map 401 errors to ProviderAuthenticationError", () => {
-      const authError = new AxiosError("Unauthorized");
-      authError.response = {
-        status: 401,
-        data: { message: "Invalid API key" },
-      } as any;
-
-      const result = service.testMapError(authError, mockContext);
-
-      expect(result).toBeInstanceOf(ProviderAuthenticationError);
-      expect(result.message).toContain("TestProvider authentication failed");
-    });
-
-    it("should map 403 errors to ProviderAuthenticationError", () => {
-      const forbiddenError = new AxiosError("Forbidden");
-      forbiddenError.response = { status: 403 } as any;
-
-      const result = service.testMapError(forbiddenError, mockContext);
-
-      expect(result).toBeInstanceOf(ProviderAuthenticationError);
-    });
-
-    it("should map 429 errors to ProviderRateLimitError", () => {
-      const rateLimitError = new AxiosError("Too Many Requests");
-      rateLimitError.response = { status: 429 } as any;
-
-      const result = service.testMapError(rateLimitError, mockContext);
-
-      expect(result).toBeInstanceOf(ProviderRateLimitError);
-      expect(result.message).toContain("TestProvider rate limit exceeded");
-    });
-
-    it("should map 5xx errors to ProviderServiceError", () => {
-      const serviceErrors = [500, 502, 503, 504];
-
-      serviceErrors.forEach((status) => {
-        const serviceError = new AxiosError("Service Error");
-        serviceError.response = { status } as any;
-
-        const result = service.testMapError(serviceError, mockContext);
-
-        expect(result).toBeInstanceOf(ProviderServiceError);
-        expect(result.message).toContain("TestProvider service unavailable");
-      });
-    });
-
-    it("should map network errors to ProviderNetworkError", () => {
-      const networkCodes = [
-        "ECONNREFUSED",
-        "ENOTFOUND",
-        "ECONNRESET",
-        "ETIMEDOUT",
-      ];
-
-      networkCodes.forEach((code) => {
-        const networkError = new AxiosError("Network Error");
-        networkError.code = code;
-
-        const result = service.testMapError(networkError, mockContext);
-
-        expect(result).toBeInstanceOf(ProviderUnknownError);
-      });
-    });
-
-    it("should map timeout errors to ProviderServiceError", () => {
-      const timeoutError = new Error("timeout exceeded");
-      timeoutError.name = "TimeoutError";
-
-      const result = service.testMapError(timeoutError, mockContext);
-
-      expect(result).toBeInstanceOf(ProviderServiceError);
-    });
-
-    it("should map unknown errors to ProviderUnknownError", () => {
-      const unknownError = new Error("Something went wrong");
-
-      const result = service.testMapError(unknownError, mockContext);
-
-      expect(result).toBeInstanceOf(ProviderUnknownError);
-      expect(result.message).toContain("TestProvider unexpected error");
-    });
-
-    it("should handle errors without response", () => {
-      const errorWithoutResponse = new AxiosError("No response");
-      const context = { provider: "TestProvider" };
-
-      const result = service.testMapError(errorWithoutResponse, context);
-
-      expect(result).toBeInstanceOf(ProviderUnknownError);
-    });
-
-    it("should handle non-Axios errors", () => {
-      const genericError = new Error("Generic error");
-      const context = { provider: "TestProvider" };
-
-      const result = service.testMapError(genericError, context);
-
-      expect(result).toBeInstanceOf(ProviderUnknownError);
-    });
-
-    it("should handle null/undefined errors", () => {
-      const context = { provider: "TestProvider" };
-
-      const nullResult = service.testMapError(null, context);
-      const undefinedResult = service.testMapError(undefined, context);
-
-      expect(nullResult).toBeInstanceOf(ProviderUnknownError);
-      expect(undefinedResult).toBeInstanceOf(ProviderUnknownError);
+  describe("error handling via interceptor", () => {
+    it("should use HttpErrorInterceptor for error handling", () => {
+      expect(service["httpErrorInterceptor"]).toBeDefined();
+      expect(service["httpErrorInterceptor"]).toBeInstanceOf(
+        HttpErrorInterceptor
+      );
     });
   });
 
@@ -457,7 +334,7 @@ describe("BaseHttpService", () => {
 
       await expect(
         service.testMakeRequest({ url: "/test", method: "GET" })
-      ).rejects.toThrow(ProviderServiceError);
+      ).rejects.toThrow(BadGatewayException);
     });
   });
 

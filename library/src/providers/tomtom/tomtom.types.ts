@@ -58,3 +58,11 @@ export interface TomTomSearchResponse {
   };
   results: TomTomSearchResult[];
 }
+
+export interface TomTomErrorResponse {
+  detailedError?: {
+    code: string;
+    message: string;
+  };
+  errorText?: string;
+}

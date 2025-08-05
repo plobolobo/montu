@@ -1,7 +1,8 @@
 import { Injectable, Inject, Logger } from "@nestjs/common";
-import { IAddressProvider, ISuggestion } from "../interfaces";
-import { ADDRESS_PROVIDER_TOKEN, PROVIDER_NAMES } from "../constants";
+import { IAddressProvider } from "../interfaces";
+import { ADDRESS_PROVIDER_TOKEN } from "../constants";
 import { getValidatedDataOrThrow } from "../utils";
+import { SearchResult } from "../types/search-result.types";
 
 @Injectable()
 export class QuickrouteAddressParserService {
@@ -12,18 +13,7 @@ export class QuickrouteAddressParserService {
     private readonly addressProvider: IAddressProvider
   ) {}
 
-  async searchAddresses(
-    query: string,
-    limit = 10
-  ): Promise<{
-    results: ISuggestion[];
-    metadata: {
-      query: string;
-      limit: number;
-      resultCount: number;
-      warnings: string[];
-    };
-  }> {
+  async searchAddresses(query: string, limit = 10): Promise<SearchResult> {
     const { data: validatedData, warnings } = getValidatedDataOrThrow({
       query,
       limit,
@@ -54,9 +44,5 @@ export class QuickrouteAddressParserService {
         warnings: warnings ? [...warnings] : [],
       },
     };
-  }
-
-  getProviderName(): string {
-    return PROVIDER_NAMES.TOMTOM;
   }
 }

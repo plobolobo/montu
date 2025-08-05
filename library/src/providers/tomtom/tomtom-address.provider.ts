@@ -11,16 +11,17 @@ import {
 import { BaseHttpService } from "../../services/base-http.service";
 
 import {
-  ProviderServiceError,
-  NoResultsException,
-  CountryMismatchException,
-} from "../../exceptions";
+  NotFoundException,
+  UnprocessableEntityException,
+  BadGatewayException,
+} from "@nestjs/common";
 import { ConfigKey } from "../../config";
 import { AUSTRALIA, PROVIDER_NAMES } from "../../constants";
 import {
   TomTomSearchResult,
   TomTomSearchResponse,
   TomTomAddress,
+  TomTomErrorResponse,
 } from "./tomtom.types";
 
 @Injectable()
@@ -55,60 +56,62 @@ export class TomTomAddressProvider
       provider: PROVIDER_NAMES.TOMTOM,
     });
 
-    try {
-      const response = await this.makeApiRequest(trimmedQuery, limit);
-      const { data } = response;
+    const response = await this.makeApiRequest(trimmedQuery, limit);
+    const { data } = response;
 
-      if ("detailedError" in data || "errorText" in data) {
-        const errorData = data as any;
-        const errorCode = errorData.detailedError?.code || "Unknown";
-        const errorMessage =
-          errorData.detailedError?.message ||
-          errorData.errorText ||
-          "Unknown TomTom error";
-        throw new ProviderServiceError(
-          PROVIDER_NAMES.TOMTOM,
-          `TomTom API Error [${errorCode}]: ${errorMessage}`
-        );
-      }
-
-      const { results } = data;
-
-      if (!results || results.length === 0) {
-        throw new NoResultsException(trimmedQuery, PROVIDER_NAMES.TOMTOM);
-      }
-
-      const australianResults = results.filter((result: TomTomSearchResult) =>
-        this.isAustralianAddress(result.address)
-      );
-
-      if (australianResults.length === 0) {
-        const nonAustralianCountries = results
-          .map((r) => r.address.country || "Unknown")
-          .filter((country, index, arr) => arr.indexOf(country) === index)
-          .join(", ");
-
-        throw new CountryMismatchException(
-          AUSTRALIA.COUNTRY_NAME,
-          nonAustralianCountries,
-          trimmedQuery
-        );
-      }
-
-      const suggestions = australianResults.map((result: TomTomSearchResult) =>
-        this.mapToSuggestion(result)
-      );
-
-      this.logger.log("Successfully fetched TomTom suggestions", {
-        resultCount: suggestions.length,
-        query: trimmedQuery,
+    if ("detailedError" in data || "errorText" in data) {
+      const errorData = data as TomTomErrorResponse;
+      const errorCode = errorData.detailedError?.code || "Unknown";
+      const errorMessage =
+        errorData.detailedError?.message ||
+        errorData.errorText ||
+        "Unknown TomTom error";
+      throw new BadGatewayException({
+        message: `TomTom service unavailable`,
         provider: PROVIDER_NAMES.TOMTOM,
+        details: `TomTom API Error [${errorCode}]: ${errorMessage}`,
       });
-
-      return suggestions;
-    } catch (error: unknown) {
-      throw error;
     }
+
+    const { results } = data;
+
+    if (!results || results.length === 0) {
+      throw new NotFoundException({
+        message: `No address suggestions found for query: "${trimmedQuery}" (${PROVIDER_NAMES.TOMTOM})`,
+        provider: PROVIDER_NAMES.TOMTOM,
+        query: trimmedQuery,
+      });
+    }
+
+    const australianResults = results.filter((result: TomTomSearchResult) =>
+      this.isAustralianAddress(result.address)
+    );
+
+    if (australianResults.length === 0) {
+      const nonAustralianCountries = results
+        .map((r) => r.address.country || "Unknown")
+        .filter((country, index, arr) => arr.indexOf(country) === index)
+        .join(", ");
+
+      throw new UnprocessableEntityException({
+        message: `Address validation failed: Expected ${AUSTRALIA.COUNTRY_NAME} address, received ${nonAustralianCountries} for "${trimmedQuery}"`,
+        expectedCountry: AUSTRALIA.COUNTRY_NAME,
+        actualCountry: nonAustralianCountries,
+        address: trimmedQuery,
+      });
+    }
+
+    const suggestions = australianResults.map((result: TomTomSearchResult) =>
+      this.mapToSuggestion(result)
+    );
+
+    this.logger.log("Successfully fetched TomTom suggestions", {
+      resultCount: suggestions.length,
+      query: trimmedQuery,
+      provider: PROVIDER_NAMES.TOMTOM,
+    });
+
+    return suggestions;
   }
 
   private async makeApiRequest(

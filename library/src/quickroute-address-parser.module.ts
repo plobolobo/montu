@@ -1,13 +1,15 @@
 import { DynamicModule, Module } from "@nestjs/common";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { HttpModule } from "@nestjs/axios";
-import { APP_FILTER, APP_INTERCEPTOR } from "@nestjs/core";
+import { APP_FILTER } from "@nestjs/core";
 import { QuickrouteAddressParserService } from "./services";
 import { ErrorLoggingService } from "./services/error-logging.service";
 
-import { TomTomAddressProvider } from "./providers";
-import { AddressProviderFactory } from "./providers/provider.factory";
-import { GoogleAddressProvider } from "./providers/google/google-address.provider";
+import {
+  TomTomAddressProvider,
+  AddressProviderFactory,
+  GoogleAddressProvider,
+} from "./providers";
 
 import { EnhancedGlobalExceptionFilter } from "./filters/enhanced-global-exception.filter";
 import { ADDRESS_PROVIDER_TOKEN } from "./constants";
@@ -24,6 +26,10 @@ const REQUEST_TIMEOUT_MS = 30000;
 export interface QuickrouteAddressParserModuleOptions {
   isGlobal?: boolean;
   loggingConfig?: Partial<LoggingConfig>;
+  apiKey?: string;
+  baseUrl?: string;
+  timeout?: number;
+  retries?: number;
 }
 
 @Module({})
@@ -43,12 +49,24 @@ export class QuickrouteAddressParserModule {
           },
           ignoreEnvFile: false,
           isGlobal: false,
+          load: [
+            () => ({
+              ...(options.apiKey && {
+                API_KEY: options.apiKey,
+              }),
+              ...(options.baseUrl && { BASE_URL: options.baseUrl }),
+              ...(options.timeout && { REQUEST_TIMEOUT: options.timeout }),
+              ...(options.retries && { RETRY_ATTEMPTS: options.retries }),
+            }),
+          ],
         }),
         HttpModule.registerAsync({
           imports: [ConfigModule],
           inject: [ConfigService],
           useFactory: (configService: ConfigService) => ({
-            timeout: configService.get(REQUEST_TIMEOUT, REQUEST_TIMEOUT_MS),
+            timeout:
+              options.timeout ||
+              configService.get(REQUEST_TIMEOUT, REQUEST_TIMEOUT_MS),
             maxRedirects: 5,
           }),
         }),
@@ -56,24 +74,17 @@ export class QuickrouteAddressParserModule {
       providers: [
         TomTomAddressProvider,
         GoogleAddressProvider,
-
         AddressProviderFactory,
         {
           provide: ADDRESS_PROVIDER_TOKEN,
           useClass: TomTomAddressProvider,
         },
-
         {
           provide: LOGGING_CONFIG_TOKEN,
-          useFactory: () => ({
-            ...createLoggingConfig(),
-            ...options.loggingConfig,
-          }),
+          useFactory: () => createLoggingConfig(options.loggingConfig),
         },
-
         ErrorLoggingService,
         QuickrouteAddressParserService,
-
         {
           provide: APP_FILTER,
           useClass: EnhancedGlobalExceptionFilter,

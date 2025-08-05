@@ -3,7 +3,6 @@ import {
   Catch,
   ArgumentsHost,
   HttpException,
-  HttpStatus,
   Injectable,
   Logger,
 } from "@nestjs/common";
@@ -13,6 +12,10 @@ import { ErrorLoggingService } from "../services/error-logging.service";
 import { ErrorContext, ErrorResponseBuilder } from "../types";
 import { createErrorFromException } from "../mappers";
 import { v4 as uuidv4 } from "uuid";
+
+interface RequestWithCorrelation extends Request {
+  correlationId?: string;
+}
 
 @Injectable()
 @Catch()
@@ -33,15 +36,15 @@ export class EnhancedGlobalExceptionFilter implements ExceptionFilter {
     }
 
     const ctx = host.switchToHttp();
-    const request = ctx.getRequest<Request>();
+    const request = ctx.getRequest<RequestWithCorrelation>();
     const response = ctx.getResponse<Response>();
 
     const correlationId =
       (request.headers?.["x-correlation-id"] as string) ||
-      ((request as any).correlationId as string) ||
+      request.correlationId ||
       uuidv4();
 
-    (request as any).correlationId = correlationId;
+    request.correlationId = correlationId;
 
     const errorContext = this.createErrorContext(request, correlationId);
 
@@ -108,7 +111,7 @@ export class EnhancedGlobalExceptionFilter implements ExceptionFilter {
     }
 
     if (exception && typeof exception === "object") {
-      const obj = exception as any;
+      const obj = exception as Record<string, unknown>;
 
       const commonProps = ["code", "type", "category", "severity", "source"];
       for (const prop of commonProps) {
@@ -131,7 +134,9 @@ export class EnhancedGlobalExceptionFilter implements ExceptionFilter {
     }
 
     if (exception && typeof exception === "object") {
-      const message = (exception as any).message || "Unknown error";
+      const obj = exception as Record<string, unknown>;
+      const message =
+        typeof obj.message === "string" ? obj.message : "Unknown error";
       return new Error(message);
     }
 

@@ -1,0 +1,15 @@
+# Build outputs
+dist/
+coverage/
+
+# Configuration files
+webpack.config.js
+vitest.config.ts
+nest-cli.json
+
+# Dependencies
+node_modules/
+
+# Generated files
+*.d.ts
+.eslintrc.js

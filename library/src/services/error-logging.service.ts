@@ -32,9 +32,6 @@ export class ErrorLoggingService {
     @Inject(LOGGING_CONFIG_TOKEN) private readonly config: LoggingConfig
   ) {}
 
-  /**
-   * Log an error with full context enrichment
-   */
   logError(
     error: Error,
     context: ErrorContext,
@@ -48,13 +45,9 @@ export class ErrorLoggingService {
 
     if (this.shouldLogError(error)) {
       this.logger.error(logEntry.message, logEntry.metadata);
-      this.recordErrorMetrics(logEntry);
     }
   }
 
-  /**
-   * Log a warning with context
-   */
   logWarning(
     message: string,
     context: ErrorContext,
@@ -70,9 +63,6 @@ export class ErrorLoggingService {
     this.logger.warn(logEntry.message, logEntry.metadata);
   }
 
-  /**
-   * Log provider operation for debugging
-   */
   logProviderOperation(
     provider: string,
     operation: string,
@@ -84,7 +74,7 @@ export class ErrorLoggingService {
       provider,
       operation,
       timestamp: new Date().toISOString(),
-      ...this.maskSensitiveData(data || {}),
+      ...(data || {}),
     };
 
     this.logger.debug(`Provider operation: ${provider}.${operation}`, metadata);
@@ -104,7 +94,7 @@ export class ErrorLoggingService {
       userAgent: context.userAgent,
       errorType: error.constructor.name,
       ...this.extractErrorDetails(error),
-      ...this.maskSensitiveData(additionalData || {}),
+      ...(additionalData || {}),
     };
 
     if (this.config.enableStackTrace && error.stack) {
@@ -138,7 +128,7 @@ export class ErrorLoggingService {
     }
 
     if ("attempt" in error && "context" in error && error.context) {
-      const context = error.context as any;
+      const context = error.context as Record<string, unknown>;
       details.attempt = context.attempt;
     }
 
@@ -147,36 +137,10 @@ export class ErrorLoggingService {
     }
 
     if ("details" in error) {
-      details.errorDetails = this.maskSensitiveData(error.details as any);
+      details.errorDetails = error.details;
     }
 
     return details;
-  }
-
-  private maskSensitiveData(
-    data: Record<string, unknown>
-  ): Record<string, unknown> {
-    if (!data || typeof data !== "object") {
-      return data;
-    }
-
-    const masked = { ...data };
-
-    for (const field of this.config.sensitiveFields) {
-      if (field in masked) {
-        masked[field] = "[REDACTED]";
-      }
-
-      for (const [key, value] of Object.entries(masked)) {
-        if (typeof value === "object" && value !== null) {
-          masked[key] = this.maskSensitiveData(
-            value as Record<string, unknown>
-          );
-        }
-      }
-    }
-
-    return masked;
   }
 
   private truncateStackTrace(stack: string): string {
@@ -190,7 +154,7 @@ export class ErrorLoggingService {
       return true;
     }
 
-    const statusCode = (error as any).getStatus?.();
+    const statusCode = (error as { getStatus?: () => number }).getStatus?.();
     if (typeof statusCode === "number") {
       if (statusCode >= 400 && statusCode < 500) {
         return this.config.level === "debug" || this.config.level === "verbose";
@@ -200,19 +164,5 @@ export class ErrorLoggingService {
     }
 
     return true;
-  }
-
-  private recordErrorMetrics(logEntry: StructuredLogEntry): void {
-    if (!this.config.enableMetrics) {
-      return;
-    }
-
-    const metrics = {
-      errorCount: 1,
-      errorType: logEntry.metadata.errorType,
-      provider: logEntry.metadata.provider,
-      statusCode: logEntry.metadata.statusCode,
-      correlationId: logEntry.metadata.correlationId,
-    };
   }
 }

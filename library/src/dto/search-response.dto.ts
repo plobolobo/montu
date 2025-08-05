@@ -12,12 +12,15 @@ export const SearchMetadataSchema = z.object({
     .number()
     .int()
     .min(0, { message: "Result count must be non-negative" }),
+  warnings: z.array(z.string()).optional().default([]),
+});
+
+export const ExtendedSearchMetadataSchema = SearchMetadataSchema.extend({
   provider: z.string().min(1, { message: "Provider is required" }),
   processingTime: z
     .number()
     .min(0, { message: "Processing time must be non-negative" }),
   correlationId: z.string().min(1, { message: "Correlation ID is required" }),
-  warnings: z.array(z.string()).optional().default([]),
   totalAttempts: z
     .number()
     .int()
@@ -28,8 +31,19 @@ export const SearchMetadataSchema = z.object({
 export const SearchResponseSchema = z.object({
   results: z.array(AddressResponseSchema),
   metadata: SearchMetadataSchema,
+});
+
+export const ExtendedSearchResponseSchema = z.object({
+  results: z.array(AddressResponseSchema),
+  metadata: ExtendedSearchMetadataSchema,
   success: z.boolean().default(true),
 });
 
 export type SearchMetadataDto = z.infer<typeof SearchMetadataSchema>;
+export type ExtendedSearchMetadataDto = z.infer<
+  typeof ExtendedSearchMetadataSchema
+>;
 export type SearchResponseDto = z.infer<typeof SearchResponseSchema>;
+export type ExtendedSearchResponseDto = z.infer<
+  typeof ExtendedSearchResponseSchema
+>;

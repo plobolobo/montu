@@ -1,11 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { Test, TestingModule } from "@nestjs/testing";
 import { Logger } from "@nestjs/common";
-import {
-  ErrorLoggingService,
-  ErrorMetadata,
-  StructuredLogEntry,
-} from "../../src/services/error-logging.service";
+import { ErrorLoggingService } from "../../src/services/error-logging.service";
 import { ErrorContext } from "../../src/types";
 import {
   LoggingConfig,
@@ -21,8 +17,6 @@ describe("ErrorLoggingService", () => {
     level: "error",
     format: "json",
     enableCorrelationId: true,
-    enableMetrics: true,
-    sensitiveFields: ["apiKey", "password", "token"],
     enableStackTrace: true,
     maxStackDepth: 10,
   };
@@ -144,7 +138,7 @@ describe("ErrorLoggingService", () => {
       expect(metadata).toEqual(expect.objectContaining(additionalData));
     });
 
-    it("should mask sensitive data", () => {
+    it("should include sensitive data as-is", () => {
       const error = new Error("Test error");
       const sensitiveData = {
         apiKey: "secret-key-123",
@@ -155,8 +149,8 @@ describe("ErrorLoggingService", () => {
       service.logError(error, mockErrorContext, sensitiveData);
 
       const [, metadata] = (logger.error as any).mock.calls[0];
-      expect(metadata.apiKey).toBe("[REDACTED]");
-      expect(metadata.password).toBe("[REDACTED]");
+      expect(metadata.apiKey).toBe("secret-key-123");
+      expect(metadata.password).toBe("secret-password");
       expect(metadata.normalField).toBe("normal-value");
     });
 
@@ -216,14 +210,14 @@ describe("ErrorLoggingService", () => {
       expect(metadata).toEqual(expect.objectContaining(additionalData));
     });
 
-    it("should mask sensitive data in warnings", () => {
+    it("should include sensitive data in warnings as-is", () => {
       const message = "Warning with sensitive data";
       const sensitiveData = { token: "secret-token", normalField: "normal" };
 
       service.logWarning(message, mockErrorContext, sensitiveData);
 
       const [, metadata] = (logger.warn as any).mock.calls[0];
-      expect(metadata.token).toBe("[REDACTED]");
+      expect(metadata.token).toBe("secret-token");
       expect(metadata.normalField).toBe("normal");
     });
   });
@@ -253,7 +247,7 @@ describe("ErrorLoggingService", () => {
       expect(metadata).toHaveProperty("timestamp");
     });
 
-    it("should mask sensitive data in provider operations", () => {
+    it("should include sensitive data in provider operations as-is", () => {
       const provider = "TomTom";
       const operation = "authenticate";
       const correlationId = "corr-123";
@@ -262,7 +256,7 @@ describe("ErrorLoggingService", () => {
       service.logProviderOperation(provider, operation, correlationId, data);
 
       const [, metadata] = (logger.debug as any).mock.calls[0];
-      expect(metadata.apiKey).toBe("[REDACTED]");
+      expect(metadata.apiKey).toBe("secret-key");
       expect(metadata.endpoint).toBe("api.tomtom.com");
     });
 
@@ -288,8 +282,8 @@ describe("ErrorLoggingService", () => {
   });
 
   describe("private methods through public interface", () => {
-    describe("sensitive data masking", () => {
-      it("should mask all configured sensitive fields", () => {
+    describe("data handling", () => {
+      it("should include all sensitive fields as-is", () => {
         const error = new Error("Test error");
         const dataWithSensitiveFields = {
           apiKey: "secret1",
@@ -305,9 +299,9 @@ describe("ErrorLoggingService", () => {
         service.logError(error, mockErrorContext, dataWithSensitiveFields);
 
         const [, metadata] = (logger.error as any).mock.calls[0];
-        expect(metadata.apiKey).toBe("[REDACTED]");
-        expect(metadata.password).toBe("[REDACTED]");
-        expect(metadata.token).toBe("[REDACTED]");
+        expect(metadata.apiKey).toBe("secret1");
+        expect(metadata.password).toBe("secret2");
+        expect(metadata.token).toBe("secret3");
         expect(metadata.normalField).toBe("normal");
       });
 
@@ -426,7 +420,7 @@ describe("ErrorLoggingService", () => {
           requestId: "req-complex-123",
           userId: "user-complex-456",
           operation: "complex-operation",
-          apiKey: "[REDACTED]",
+          apiKey: "secret-should-be-masked",
           metadata: { nested: "value", count: 42 },
         })
       );
@@ -469,8 +463,6 @@ describe("ErrorLoggingService", () => {
         level: "debug",
         format: "text",
         enableCorrelationId: false,
-        enableMetrics: false,
-        sensitiveFields: ["customSecret"],
         enableStackTrace: false,
         maxStackDepth: 5,
       };
@@ -498,7 +490,7 @@ describe("ErrorLoggingService", () => {
 
       expect(metadata.stackTrace).toBeUndefined();
 
-      expect(metadata.customSecret).toBe("[REDACTED]");
+      expect(metadata.customSecret).toBe("secret");
     });
   });
 });

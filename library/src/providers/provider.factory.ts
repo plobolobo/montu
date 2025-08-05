@@ -3,8 +3,7 @@ import { ConfigService } from "@nestjs/config";
 import { IAddressProvider } from "../interfaces";
 import { TomTomAddressProvider } from "./tomtom/tomtom-address.provider";
 import { ConfigKey } from "../config";
-
-export type ProviderType = "tomtom" | "google";
+import { PROVIDER_NAMES } from "../constants";
 
 @Injectable()
 export class AddressProviderFactory {
@@ -14,26 +13,23 @@ export class AddressProviderFactory {
     private readonly configService: ConfigService
   ) {}
 
-  createProvider(type?: ProviderType): IAddressProvider<any> {
-    const providerType = type || this.getDefaultProvider();
+  createProvider(type?: typeof PROVIDER_NAMES): IAddressProvider<unknown> {
+    const defaultProvider =
+      this.configService.get(ConfigKey.DEFAULT_PROVIDER) ||
+      PROVIDER_NAMES.TOMTOM;
+
+    const providerType = type || defaultProvider;
 
     switch (providerType) {
-      case "tomtom":
+      case PROVIDER_NAMES.TOMTOM:
         return this.tomtomProvider;
 
-      case "google":
+      // example provider, add more as needed
+      case PROVIDER_NAMES.GOOGLE:
         throw new Error("Google Maps provider not implemented yet");
 
       default:
         throw new Error(`Unknown provider type: ${providerType}`);
     }
-  }
-
-  getAllProviders(): IAddressProvider<any>[] {
-    return [this.tomtomProvider];
-  }
-
-  private getDefaultProvider(): ProviderType {
-    return this.configService.get(ConfigKey.DEFAULT_PROVIDER) || "tomtom";
   }
 }

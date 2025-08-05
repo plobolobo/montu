@@ -3,6 +3,7 @@ import {
   AddressResponseSchema,
   CoordinatesSchema,
   SearchResponseSchema,
+  ExtendedSearchResponseSchema,
 } from "../../src/dto";
 
 describe("Address Response DTOs", () => {
@@ -112,7 +113,9 @@ describe("Address Response DTOs", () => {
         results: validResponse.results,
         metadata: validResponse.metadata,
       };
-      const result = SearchResponseSchema.safeParse(responseWithoutSuccess);
+      const result = ExtendedSearchResponseSchema.safeParse(
+        responseWithoutSuccess
+      );
       expect(result.success).toBe(true);
       if (result.success) {
         expect(result.data.success).toBe(true);

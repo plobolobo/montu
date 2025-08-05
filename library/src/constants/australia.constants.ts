@@ -4,10 +4,6 @@ export const AUSTRALIA = {
   COUNTRY_NAME: "Australia",
 } as const;
 
-export const PROVIDER_NAMES = {
-  TOMTOM: "TomTom",
-} as const;
-
 export const AUSTRALIAN_STATES = [
   "NSW",
   "VIC",

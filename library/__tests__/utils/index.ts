@@ -1,7 +1,3 @@
-/**
- * Test utilities index - exports all test helper functions and factories
- */
-
 export * from "./test-factories";
 
 export * from "./test-setup";

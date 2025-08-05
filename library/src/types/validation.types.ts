@@ -1,7 +1,3 @@
-/**
- * Immutable validation result structures
- */
-
 export interface ValidationResult<T> {
   readonly isValid: true;
   readonly data: T;
@@ -22,9 +18,6 @@ export interface ValidationErrorDetail {
 
 export type ValidationOutcome<T> = ValidationResult<T> | ValidationError;
 
-/**
- * Immutable validation configuration
- */
 export interface ValidationConfig {
   readonly minLength: number;
   readonly maxLength: number;
@@ -34,9 +27,6 @@ export interface ValidationConfig {
   readonly maxLimit: number;
 }
 
-/**
- * Builder for validation warnings
- */
 export class ValidationWarningsBuilder {
   private warnings: string[] = [];
 

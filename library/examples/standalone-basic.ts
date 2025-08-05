@@ -2,26 +2,9 @@
 
 import QuickrouteAddressParser from "@globolobo/quickroute-address-parser/standalone";
 
-async function loadEnv(): Promise<void> {
-  try {
-    const { config } = await import("dotenv");
-    const { dirname, join } = await import("path");
-    const { fileURLToPath } = await import("url");
-
-    const __dirname = dirname(fileURLToPath(import.meta.url));
-    const envPath = join(__dirname, ".env");
-
-    config({ path: envPath });
-  } catch (error) {
-    console.error("not using dotenv, will assume TOMTOM_API_KEY is set");
-  }
-}
-
 async function basicExample(): Promise<void> {
-  const { TOMTOM_API_KEY } = process.env;
-
   const parser = new QuickrouteAddressParser({
-    tomtomApiKey: TOMTOM_API_KEY,
+    tomtomApiKey: "", // Your API key here!
     enableLogging: true,
     timeout: 5000,
   });
@@ -64,19 +47,6 @@ async function basicExample(): Promise<void> {
 }
 
 async function main() {
-  // Load environment variables first
-  await loadEnv();
-
-  const { TOMTOM_API_KEY } = process.env;
-
-  if (!TOMTOM_API_KEY) {
-    console.error("❌ Please set TOMTOM_API_KEY environment variable");
-    console.error(
-      "   You can set it in a .env file or as an environment variable"
-    );
-    process.exit(1);
-  }
-
   await basicExample();
 }
 

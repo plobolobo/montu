@@ -3,12 +3,7 @@ import resolve from "@rollup/plugin-node-resolve";
 import commonjs from "@rollup/plugin-commonjs";
 import json from "@rollup/plugin-json";
 import { dts } from "rollup-plugin-dts";
-import autoExternal from "rollup-plugin-auto-external";
-import type { RollupOptions } from "rollup";
-
-import { PROVIDER_NAMES } from "./src/constants";
-
-const PROVIDER_NAMES_ARR = Object.values(PROVIDER_NAMES);
+import { globSync } from "glob";
 
 const baseOutput = {
   sourcemap: false,
@@ -16,10 +11,12 @@ const baseOutput = {
 };
 
 const commonPlugins = [
-  autoExternal(),
   json(),
   resolve({
-    preferBuiltins: true,
+    preferBuiltins: false,
+    browser: true,
+    exportConditions: ["node", "default", "module", "import"],
+    modulesOnly: true,
   }),
   commonjs(),
   typescript({
@@ -28,47 +25,86 @@ const commonPlugins = [
     declaration: false,
     declarationMap: false,
     tslib: "tslib",
+
+    compilerOptions: {
+      outDir: undefined,
+    },
   }),
 ];
 
-const buildProviders = (providerNames: string[]): RollupOptions[] => {
-  return providerNames.map((providerName) => ({
-    input: `src/providers/${providerName}/index.ts`,
-    output: [
-      {
-        ...baseOutput,
-        file: `dist/providers/${providerName}.js`,
-        format: "esm",
-      },
-      {
-        ...baseOutput,
-        file: `dist/providers/${providerName}.cjs`,
-        format: "cjs",
-      },
-    ],
-    plugins: commonPlugins,
-  }));
-};
-
-const providerConfigs = buildProviders(PROVIDER_NAMES_ARR);
-
 export default [
-  ...providerConfigs,
   {
-    input: "src/index.ts",
+    input: globSync("src/**/*.ts", {
+      ignore: ["src/**/*.d.ts", "src/standalone.ts"],
+    }),
     output: [
-      { ...baseOutput, file: "dist/index.js", format: "esm" },
-      { ...baseOutput, file: "dist/index.cjs", format: "cjs" },
+      {
+        ...baseOutput,
+        dir: "dist",
+        format: "esm",
+        preserveModules: true,
+        preserveModulesRoot: "src",
+        entryFileNames: "[name].js",
+        chunkFileNames: "[name].js",
+      },
+      {
+        ...baseOutput,
+        dir: "dist",
+        format: "cjs",
+        preserveModules: true,
+        preserveModulesRoot: "src",
+        entryFileNames: "[name].cjs",
+        chunkFileNames: "[name].cjs",
+      },
     ],
     plugins: commonPlugins,
+    external: (id) => {
+      // Only externalize npm packages, not relative paths or absolute paths
+      return !id.startsWith(".") && !id.startsWith("/") && !id.includes("src/");
+    },
   },
   {
     input: "src/standalone.ts",
     output: [
-      { ...baseOutput, file: "dist/standalone.js", format: "esm" },
-      { ...baseOutput, file: "dist/standalone.cjs", format: "cjs" },
+      {
+        ...baseOutput,
+        file: "dist/standalone.js",
+        format: "esm",
+      },
+      {
+        ...baseOutput,
+        file: "dist/standalone.cjs",
+        format: "cjs",
+      },
     ],
-    plugins: commonPlugins,
+    plugins: [
+      json(),
+      resolve({
+        preferBuiltins: false,
+        browser: false,
+        exportConditions: ["node", "default", "module", "import"],
+      }),
+      commonjs({
+        extensions: [".js", ".ts"],
+      }),
+      typescript({
+        tsconfig: "./tsconfig.json",
+        sourceMap: false,
+        declaration: false,
+        declarationMap: false,
+        tslib: "tslib",
+        compilerOptions: {
+          outDir: undefined,
+        },
+      }),
+    ],
+    external: (id) => {
+      // Externalize npm packages (including tslib) but bundle local modules
+      return !id.startsWith(".") && !id.startsWith("/") && !id.includes("src/");
+    },
+    treeshake: {
+      moduleSideEffects: false,
+    },
   },
   {
     input: "src/index.ts",

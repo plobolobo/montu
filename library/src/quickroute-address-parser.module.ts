@@ -26,7 +26,7 @@ const REQUEST_TIMEOUT_MS = 30000;
 export interface QuickrouteAddressParserModuleOptions {
   isGlobal?: boolean;
   loggingConfig?: Partial<LoggingConfig>;
-  apiKey?: string;
+  apiKey: string;
   baseUrl?: string;
   timeout?: number;
   retries?: number;
@@ -35,29 +35,26 @@ export interface QuickrouteAddressParserModuleOptions {
 @Module({})
 export class QuickrouteAddressParserModule {
   static register(
-    options: QuickrouteAddressParserModuleOptions = {}
+    options: QuickrouteAddressParserModuleOptions
   ): DynamicModule {
     return {
       module: QuickrouteAddressParserModule,
       global: options.isGlobal || false,
       imports: [
         ConfigModule.forRoot({
-          validate: (config) => AddressParserConfigSchema.parse(config),
-          validationOptions: {
-            allowUnknown: true,
-            abortEarly: false,
-          },
-          ignoreEnvFile: false,
+          ignoreEnvFile: true,
+          ignoreEnvVars: true,
           isGlobal: false,
           load: [
-            () => ({
-              ...(options.apiKey && {
+            () => {
+              const config = {
                 API_KEY: options.apiKey,
-              }),
-              ...(options.baseUrl && { BASE_URL: options.baseUrl }),
-              ...(options.timeout && { REQUEST_TIMEOUT: options.timeout }),
-              ...(options.retries && { RETRY_ATTEMPTS: options.retries }),
-            }),
+                ...(options.baseUrl && { BASE_URL: options.baseUrl }),
+                ...(options.timeout && { REQUEST_TIMEOUT: options.timeout }),
+                ...(options.retries && { RETRY_ATTEMPTS: options.retries }),
+              };
+              return AddressParserConfigSchema.parse(config);
+            },
           ],
         }),
         HttpModule.registerAsync({
